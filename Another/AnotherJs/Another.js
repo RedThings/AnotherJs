@@ -81,7 +81,7 @@ if (jQuery === undefined) {
             return a.Helpers.IsUndefinedOrNull(this);
         }, enumerable: false
     });
-    var IsNullOrUndefined = function(obj) {
+    var IsNullOrUndefined = function (obj) {
         return a.Helpers.IsUndefinedOrNull(obj);
     }
     if (!a.Helpers.StartsWith(jQuery.fn.jquery, "2.")) {
@@ -122,40 +122,43 @@ if (jQuery === undefined) {
 
                             fnd.Elements.forEach(function (el) {
 
-                                // switch type
-                                switch (el[0].tagName) {
+                                if (el.length > 0) {
+                                    
+                                    // switch type
+                                    switch (el[0].tagName) {
 
-                                    case "INPUT":
-                                    case "TEXTAREA":
-                                    case "SELECT":
-                                        {
-                                            if (el.data("an_change") === undefined) {
-                                                el.data("an_change", true);
+                                        case "INPUT":
+                                        case "TEXTAREA":
+                                        case "SELECT":
+                                            {
+                                                if (el.data("an_change") === undefined) {
+                                                    el.data("an_change", true);
 
-                                                if (el[0].tagName === "SELECT") {
-                                                    el.bind("change", function (e) {
-                                                        el.data("change_from_element", true);
-                                                        model[newVal.name] = el.val();
-                                                    });
-                                                } else {
-                                                    el.bind("keyup", function (e) {
-                                                        el.data("change_from_element", true);
-                                                        model[newVal.name] = el.val();
-                                                    });
+                                                    if (el[0].tagName === "SELECT") {
+                                                        el.bind("change", function (e) {
+                                                            el.data("change_from_element", true);
+                                                            model[newVal.name] = el.val();
+                                                        });
+                                                    } else {
+                                                        el.bind("keyup", function (e) {
+                                                            el.data("change_from_element", true);
+                                                            model[newVal.name] = el.val();
+                                                        });
+                                                    }
+
                                                 }
 
-                                            }
+                                                if (el.data("change_from_element") === true) {
+                                                    el.data("change_from_element", false);
+                                                } else {
+                                                    el.val(theValue);
+                                                }
 
-                                            if (el.data("change_from_element") === true) {
-                                                el.data("change_from_element", false);
-                                            } else {
-                                                el.val(theValue);
+                                                break;
                                             }
-
-                                            break;
-                                        }
-                                    default:
-                                        el.html(theValue);
+                                        default:
+                                            el.html(theValue);
+                                    }
                                 }
                             });
 
@@ -296,8 +299,8 @@ if (jQuery === undefined) {
         };
 
         // initialize presenter
-        this.InitializePresenter = function (name, callback) {
-            a.InitializePresenter(name, callback);
+        this.InitializePresenter = function (name, arrayOfParams, callback) {
+            return a.InitializePresenter(name, arrayOfParams, callback);
         }
 
         // get service
@@ -385,6 +388,7 @@ if (jQuery === undefined) {
         if (a.Helpers.IsFunc(callback)) {
             callback(presenter);
         }
+        return presenter;
     }
 
     // events
@@ -441,34 +445,38 @@ if (jQuery === undefined) {
         return new svc(a.DomHelper);
     }
 
-    // go
-    a.DomHelper(window).load(function (e) {
+    a.Initialize = function () {
 
-        a.Applications.forEach(function (app) {
+        // go
+        a.DomHelper(window).load(function (e) {
 
-            app.Configurations.forEach(function (conf) {
+            a.Applications.forEach(function (app) {
 
-                if (a.Helpers.IsFunc(conf)) {
-                    conf(app);
-                }
+                app.Configurations.forEach(function (conf) {
+
+                    if (a.Helpers.IsFunc(conf)) {
+                        conf(app);
+                    }
+
+                });
+
+            });
+
+            a.Applications.forEach(function (app) {
+
+                app.Runs.forEach(function (r) {
+
+                    if (a.Helpers.IsFunc(r)) {
+                        r(app);
+                    }
+
+                });
 
             });
 
         });
 
-        a.Applications.forEach(function (app) {
-
-            app.Runs.forEach(function (r) {
-
-                if (a.Helpers.IsFunc(r)) {
-                    r(app);
-                }
-
-            });
-
-        });
-
-    });
+    };
 
 })(Another);
 

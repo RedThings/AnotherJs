@@ -5,7 +5,7 @@
     var layoutPresenter = function (presenter) {
         
         // initialize model
-        presenter.Model.SearchTerm = undefined;
+        presenter.Model.SearchTerm = "";
 
         // get menu elements
         var menuButton = presenter.DomHelper("#menu_button");
@@ -33,12 +33,7 @@
         //svc.GetData();
         var svc2 = presenter.GetService("NoDomHelper");
 
-        // raise event
-        presenter.SubscribeToEvent("OnRouteNotFound", function(obj) {
-
-            console.log("From presenter OnRouteNotFound ", obj);
-
-        });
+        
 
     }
 

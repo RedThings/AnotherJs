@@ -87,11 +87,14 @@
     <Content Include="Content\bootstrap-theme.css.map" />
     <Content Include="Content\bootstrap.css.map" />
     <None Include="Scripts\jquery-2.1.3.intellisense.js" />
+    <Content Include="QUnit\qunit-1.17.1.css" />
+    <Content Include="QUnit\qunit-1.17.1.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="Scripts\jquery-2.1.3.js" />
     <Content Include="Scripts\jquery-2.1.3.min.js" />
     <Content Include="Scripts\npm.js" />
+    <Content Include="Testing.html" />
     <Content Include="Views\Home\About.html" />
     <Content Include="Views\Home\Index.html" />
     <Content Include="Views\Person\Edit.html" />

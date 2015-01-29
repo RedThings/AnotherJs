@@ -5,6 +5,12 @@ var mainApp = Another.CreateApplication("Main");
 
     app.Configure(function () {
 
+        // subscribe
+        app.SubscribeToEvent("OnRouteNotFound", function (e) {
+            alert("Page not found");
+            console.log(e);
+        });
+
         // configure routing
         app.ConfigureRoutes("section#main", function (builder) {
 
@@ -32,33 +38,26 @@ var mainApp = Another.CreateApplication("Main");
 
                     this.Index = function () {
 
-                        return builder.View("/Views/Home/Index.html", "Home");
+                        builder.View("/Views/Home/Index.html", "Home");
 
                     };
 
-                    this.About = function() {
+                    this.About = function () {
 
-                        return builder.View("/Views/Home/About.html", "About");
+                        builder.View("/Views/Home/About.html", "About");
 
                     }
 
                 })
-                .AddRoutingController("Person", function() {
-                    
-                    this.Edit = function(id) {
+                .AddRoutingController("Person", function () {
+
+                    this.Edit = function (id) {
 
                         return builder.View("/Views/Person/Edit.html", "PersonEdit");
 
                     }
 
                 });
-
-            app.SubscribeToEvent("OnRouteNotFound", function (e) {
-
-                
-
-            });
-            
 
         });
 
@@ -68,7 +67,7 @@ var mainApp = Another.CreateApplication("Main");
 
         app.InitializePresenter("Layout", function (p) {
 
-            
+            // can do stuff here.
 
         });
 
