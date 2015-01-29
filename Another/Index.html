@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>AnotherJs</title>
+    <link href="/Content/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="container-fluid">
+    <header class="row well bg-primary">
+        <div class="col-sm-3">
+            <button id="menu_button" type="button" class="btn btn-primary glyphicon glyphicon-list">
+                <span class="sr-only">Toggle navigation</span>
+            </button>
+            <h1 id="current_page"></h1>
+            <div id="menu" style="display: none;">
+                <ul>
+                    <li id="menu_item_repeat"></li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <input id="search_box" type="search" class="form-control" placeholder="Search emails..." />
+        </div>
+        <div class="col-sm-3">
+            <button type="button" id="home_button" class="btn btn-default glyphicon glyphicon-home">
+                <span class="sr-only">Home</span>
+            </button>
+            <button type="button" id="user_button" class="btn btn-default glyphicon glyphicon-user">
+                <span class="sr-only">View my details</span>
+            </button>
+            <button type="button" id="logout_button" class="btn btn-default glyphicon glyphicon-off">
+                <span class="sr-only">Logout</span>
+            </button>
+        </div>
+    </header>
+    <h2 id="search_term"></h2>
+    <p>
+        <a href="#/">Home</a> |
+        <a href="#/Home/About">About</a> |
+        <a href="#/Test/Testy?param1=x&param2=y">Test</a> |
+        <a href="#/Person/Edit/123/SomeOtherParam/SomeNewParam">A person</a>
+    </p>
+    <section id="main"></section>
+
+
+    <script src="Scripts/jquery-2.1.3.js"></script>
+
+    <script src="/AnotherJs/Another.js"></script>
+    <script src="/AnotherJs/Another.Routing.js"></script>
+
+    <script src="Content/Scripts/MainApp.js"></script>
+    <script src="Content/Scripts/Presenters/Layout.js"></script>
+    <script src="Content/Scripts/Presenters/Others.js"></script>
+    <script src="Content/Scripts/Services/Services.js"></script>
+
+</body>
+</html>
