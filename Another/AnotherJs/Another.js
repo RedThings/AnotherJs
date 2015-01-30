@@ -59,6 +59,21 @@ if (jQuery === undefined) {
         },
         IsFunc: function (func) {
             return !a.Helpers.IsUndefinedOrNull(func) && typeof func === "function";
+        },
+        IsArray: function (arr) {
+            return Object.prototype.toString.call(arr) === '[object Array]';
+        },
+        GetRandom: function (forId) {
+
+            var rand = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+
+            return forId ? rand.replace("-", "") : rand;
+        },
+        Clone:function(obj) {
+            return JSON.parse(JSON.stringify(obj));
         }
 
     };
@@ -79,7 +94,7 @@ if (jQuery === undefined) {
             return a.Helpers.IsUndefinedOrNull(this);
         }, enumerable: false
     });
-// ReSharper disable once InconsistentNaming
+    // ReSharper disable once InconsistentNaming
     var IsNullOrUndefined = function (obj) {
         return a.Helpers.IsUndefinedOrNull(obj);
     }
@@ -128,36 +143,15 @@ if (jQuery === undefined) {
 
                                         case "INPUT":
                                         case "TEXTAREA":
-                                        case "SELECT":
                                             {
-                                                if (el.data("an_change") === undefined) {
-                                                    el.data("an_change", true);
-
-                                                    if (el[0].tagName === "SELECT") {
-                                                        el.bind("change", function (e) {
-                                                            el.data("change_from_element", true);
-                                                            model[newVal.name] = el.val();
-                                                        });
-                                                    } else {
-                                                        el.bind("keyup", function (e) {
-                                                            el.data("change_from_element", true);
-                                                            model[newVal.name] = el.val();
-                                                        });
-                                                    }
-
-                                                }
-
-                                                if (el.data("change_from_element") === true) {
-                                                    el.data("change_from_element", false);
-                                                } else {
-                                                    el.val(theValue);
-                                                }
-
+                                                doTextInputOrElementChange(el, model, newVal, theValue);
                                                 break;
                                             }
                                         default:
                                             el.html(theValue);
                                     }
+
+
                                 }
                             });
 
@@ -173,6 +167,27 @@ if (jQuery === undefined) {
 
         };
 
+        // do text input or element change change
+        var doTextInputOrElementChange = function (el, mdel, newVal, theValue) {
+
+            if (el.data("an_change") === undefined) {
+
+                el.data("an_change", true);
+
+                el.bind("keyup", function (e) {
+                    el.data("change_from_element", true);
+                    mdel[newVal.name] = el.val();
+                });
+
+            }
+
+            if (el.data("change_from_element") === true) {
+                el.data("change_from_element", false);
+            } else {
+                el.val(theValue);
+            }
+        }
+
         // dom helper
         this.DomHelper = domHelper;
 
@@ -182,6 +197,7 @@ if (jQuery === undefined) {
         // Add observer
         this.Bind = function (propName, func) {
             _observables.push({ PropName: propName, Callback: func, Elements: null });
+            return ts;
         }
 
         // Add element observer
@@ -231,6 +247,206 @@ if (jQuery === undefined) {
 
         }
 
+        // repeater
+        this.BindRepeater = function (opts) {
+
+            // check
+            if (typeof opts.data === "string") {
+
+                // bind
+                ts.Bind(opts.data, function (newVal) {
+
+                    opts.data = newVal;
+                    ts.BindRepeater(opts);
+
+                });
+            } else {
+
+                // el
+                var el = ts.DomHelper(opts.selector);
+
+                // check
+                if (el.length > 0) {
+
+                    // parent
+                    var parent = el.parent();
+                    parent.hide();
+
+                    // check
+                    if (parent.length < 1) throw "A repeated element must have a parent";
+
+                    // clone text
+                    var cloneText = el[0].outerHTML;
+
+                    // loop parent elements and remove
+                    parent.children().each(function (i, childEl) {
+                        childEl.parentNode.removeChild(childEl);
+                    });
+                    // put back
+                    el = ts.DomHelper(cloneText);
+                    parent.append(el);
+
+                    // find element
+                    if (el.length > 0 && a.Helpers.IsArray(opts.data)) {
+
+                        // hide el
+                        el.hide();
+
+                        // loop data
+                        var rowCount = 0;
+                        opts.data.forEach(function (row) {
+
+                            var newEl = ts.DomHelper(cloneText);
+                            newEl.removeAttr("id");
+                            newEl.children().each(function (i, theEl) {
+                                var jTheEl = ts.DomHelper(theEl);
+                                var theId = jTheEl.attr("id");
+                                if (theId !== undefined && theId.length > 0) {
+                                    jTheEl.attr("id", theId + "[" + rowCount + "]");
+                                }
+                            });
+                            parent.append(newEl);
+                            opts.onRowBinding(newEl, row);
+                            newEl.show();
+                            rowCount++;
+                        });
+
+                        // FINALLY
+                        parent.show();
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        // checkgroup
+        this.BindCheckGroup = function (opts) {
+
+            // check
+            if (typeof opts.data === "string") {
+
+                ts.Bind(opts.data, function (newVal) {
+
+                    opts.data = newVal;
+                    ts.BindCheckGroup(opts);
+
+                });
+
+            } else {
+
+                // get element
+                var el = ts.DomHelper(opts.selector);
+
+                // checj
+                if (el.length > 0) {
+
+                    // group
+                    var theGroup = [];
+
+                    // kill children
+                    el.children().remove();
+
+                    // name
+                    var newName = a.Helpers.GetRandom(true);
+
+                    // evemt
+                    var evName = "click";
+                    var isRadio = opts.type === "radio";
+
+                    // create children
+                    opts.data.forEach(function (d) {
+
+                        // create els
+                        var newId = a.Helpers.GetRandom(true);
+                        var newInput = ts.DomHelper("<input" + (isRadio ? " name='" + newName + "'" : "") + " id='" + newId + "' type='" + (isRadio ? "radio" : "checkbox") + "' class='another-" + (isRadio ? "radio" : "checkbox") + "' value='" + d[opts.dataValueField] + "' />");
+                        var newLabel = ts.DomHelper("<span class='another-chklabel' for='" + newId + "'>" + d[opts.dataTextField] + "</label>");
+
+                        // bind
+                        newInput.bind(evName, function (e) {
+
+                            el.data("change_from_element", true);
+
+                            if (isRadio) {
+                                ts.Model[opts.dataProp] = newInput.val();
+                            } else {
+                                // create data bucket
+                                if (ts.Model[opts.dataProp] === undefined)
+                                    ts.Model[opts.dataProp] = [];
+
+                                // create temp
+                                var tempBucket = [];
+                                ts.Model[opts.dataProp].forEach(function(tmp) {
+                                    tempBucket.push(tmp);
+                                });
+
+                                // add
+                                if (tempBucket.indexOf(newInput.val()) < 0) {
+                                    if (newInput[0].checked) {
+                                        tempBucket.push(newInput.val());
+                                    }
+                                } else {
+                                    if (!newInput[0].checked) {
+                                        var indx = tempBucket.indexOf(newInput.val());
+                                        tempBucket.splice(indx, 1);
+                                    }
+                                }
+
+                                // finally apply
+                                ts.Model[opts.dataProp] = tempBucket;
+
+                            }
+
+                            
+
+                        });
+
+
+                        // finally, add
+                        el.append(newInput);
+                        el.append(newLabel);
+                        theGroup.push(newInput);
+
+                    });
+
+                    // bind overall
+                    ts.Bind(opts.dataProp, function (newVal) {
+                        
+                        if (el.data("change_from_element") === true) {
+                            el.data("change_from_element", false);
+                        } else {
+                            theGroup.forEach(function (jEl) {
+                                
+                                var chekd;
+                                if (opts.multiselect === true) {
+                                    chekd = ts.Model[opts.dataProp] !== undefined && ts.Model[opts.dataProp].indexOf(jEl.val()) > -1;
+                                } else {
+                                    chekd = ts.Model[opts.dataProp] == jEl.val();
+                                }
+                                jEl[0].checked = chekd;
+
+                            });
+                        }
+                    });
+
+                }
+
+            }
+
+
+
+        }
+
+        // push change
+        this.PushChange = function(pushto, func) {
+
+            var temp = a.Helpers.Clone(pushto);
+            func(temp);
+            return temp;
+        }
+
         // set observer
         this.SetObserve = function () {
 
@@ -239,6 +455,7 @@ if (jQuery === undefined) {
                 doOnObserve(newVal);
             });
 
+            return ts;
         }
 
         // get service
@@ -249,12 +466,16 @@ if (jQuery === undefined) {
         // raise event
         this.RaiseEvent = function (evName, obj) {
             a.RaiseEvent(evName, obj);
+            return ts;
         }
 
         // subscribe
         this.SubscribeToEvent = function (evName, func) {
             a.SubscribeToEvent(evName, func);
+            return ts;
         }
+
+        // 
 
     }
 
@@ -379,7 +600,7 @@ if (jQuery === undefined) {
 
         // found so initialize
         var model = {};
-        var domHelper = a.DomHelper;
+        var domHelper = a.GetDependency("DomHelper");
         var presenter = new a.AnotherPresenter(name, model, domHelper);
         presenter.SetObserve();
 
@@ -530,7 +751,7 @@ if (jQuery === undefined) {
             dep = deps;
             deps = undefined;
         }
-        
+
         if (IsNullOrUndefined(name) || IsNullOrUndefined(type) || name.IsNullOrEmpty() || type.IsNullOrEmpty() || !a.Helpers.IsFunc(dep))
             throw "AddDependency: name and type must be a string and dep must be a function";
         if (a.Dependencies[name] !== undefined)

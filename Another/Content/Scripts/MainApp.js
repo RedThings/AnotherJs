@@ -54,22 +54,40 @@ var mainApp = Another.CreateApplication("Main");
 
                     this.Index = function () {
 
-                        builder.View("/Views/Home/Index.html", "Home");
+                       return builder.View("/Views/Home/Index.html", "Home");
 
                     };
 
                     this.About = function () {
 
-                        builder.View("/Views/Home/About.html", "About");
+                        return builder.View("/Views/Home/About.html", "About");
 
                     }
 
                 })
                 .AddRoutingController("Person", function () {
 
-                    this.Edit = function (id) {
+                    this.Index = function() {
 
-                        return builder.View("/Views/Person/Edit.html", "PersonEdit");
+                        return builder.View("/Views/Person/Index.html","PersonIndex");
+
+                    }
+
+                    this.Create = function (id) {
+
+                        return builder.View("/Views/Person/Edit.html", "PersonCreate");
+
+                    }
+
+                    this.Update = function (id) {
+
+                        return builder.View("/Views/Person/Edit.html", "PersonUpdate");
+
+                    }
+
+                    this.Read = function (id) {
+
+                        return builder.View("/Views/Person/Edit.html", "PersonRead");
 
                     }
 
