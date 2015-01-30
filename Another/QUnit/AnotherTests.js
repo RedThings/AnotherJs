@@ -1,6 +1,33 @@
 ﻿
+// mock
+Another.MockDependency("Http", "Static", function () {
+
+    this.Get = function () {
+        var dfd = new jQuery.Deferred();
+        return dfd.promise();
+    }
+    this.Post = function () {
+        var dfd = new jQuery.Deferred();
+        return dfd.promise();
+    }
+    this.Ajax = function () {
+        var dfd = new jQuery.Deferred();
+        return dfd.promise();
+    };
+
+});
+Another.MockDependency("TestDep", "Static", function () {
+
+    this.Funk = function () {
+        console.log("Yes, you mocked me.");
+    };
+
+});
+
+// init
 Another.Initialize();
 
+// test
 (function (app) {
 
     QUnit.test("App is not null", function (ass) {
@@ -18,9 +45,11 @@ Another.Initialize();
         ass.ok(p.CheckEmail() === false, "Check email = false");
         ass.ok(p.Model.ErrorMessage === "Email already taken", "Error correct for previous");
     });
-    QUnit.test("DUMMY", function(ass) {
-        ass.equal("COCK", undefined.x.y, "OH DEAR");
+    QUnit.test("Test dependency has been mocked. (Testing the test)", function(ass) {
+        var dep = app.GetDependency("TestDep");
+        ass.ok(dep.Funk() === undefined, "This means the mocking bloody works bloody hell");
     });
 
 
 })(mainApp);
+

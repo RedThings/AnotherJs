@@ -22,8 +22,6 @@ if (jQuery === undefined) {
     throw "Another currently uses jQuery v2.x as a dom helper";
 }
 
-
-
 // closure
 (function (a) {
 
@@ -81,6 +79,7 @@ if (jQuery === undefined) {
             return a.Helpers.IsUndefinedOrNull(this);
         }, enumerable: false
     });
+// ReSharper disable once InconsistentNaming
     var IsNullOrUndefined = function (obj) {
         return a.Helpers.IsUndefinedOrNull(obj);
     }
@@ -123,7 +122,7 @@ if (jQuery === undefined) {
                             fnd.Elements.forEach(function (el) {
 
                                 if (el.length > 0) {
-                                    
+
                                     // switch type
                                     switch (el[0].tagName) {
 
@@ -291,6 +290,10 @@ if (jQuery === undefined) {
         // create components
         this.CreatePresenter = function (name, func) {
 
+            // check
+            if (a.PresenterCallbacks[name] !== undefined)
+                throw "CreatePresenter: '" + name + "' already exists.";
+
             // add to application collection
             a.PresenterCallbacks[name] = func;
 
@@ -309,8 +312,9 @@ if (jQuery === undefined) {
         }
 
         // create service
-        this.CreateService = function (name, svc) {
-            a.CreateService(name, svc);
+        this.AddService = function (name, type, deps, svc) {
+            a.AddService(name, type, deps, svc);
+            return ts;
         }
 
         // raise event
@@ -321,6 +325,17 @@ if (jQuery === undefined) {
         // subscribe
         this.SubscribeToEvent = function (evName, func) {
             a.SubscribeToEvent(evName, func);
+        }
+
+        // add dependency
+        this.AddDependency = function (name, type, deps, dep) {
+            a.AddDependency(name, type, deps, dep);
+            return ts;
+        }
+
+        // get dependency
+        this.GetDependency = function (name) {
+            return a.GetDependency(name);
         }
     }
 
@@ -432,20 +447,148 @@ if (jQuery === undefined) {
     // services
     a.Services = {};
 
+    // services
+    a.StaticServices = {};
+
     // create service
-    a.CreateService = function (name, svc) {
-        a.Services[name] = svc;
+    a.AddService = function (name, type, deps, svc) {
+
+        if (IsNullOrUndefined(deps)) {
+            svc = deps;
+            deps = undefined;
+        }
+
+        if (IsNullOrUndefined(name) || IsNullOrUndefined(svc) || IsNullOrUndefined(type) || type.IsNullOrEmpty() || name.IsNullOrEmpty() || !a.Helpers.IsFunc(svc))
+            throw "AddService: name, type and svc must be strings and a function respectively";
+        if (a.Services[name] !== undefined)
+            throw "AddService: service '" + name + "' already exists";
+
+        a.Services[name] = { Name: name, Dependencies: deps, Service: svc, Type: type };
     }
 
     // get service
     a.GetService = function (svcName) {
+
         var svc = a.Services[svcName];
         if (a.Helpers.IsUndefinedOrNull(svc))
             throw "Cannot find service '" + svcName + "'";
-        return new svc(a.DomHelper);
+
+        // try static
+        if (svc.Type === "Static" && a.StaticServices[svcName] !== undefined)
+            return a.StaticServices[svcName];
+
+        // try dependencyless
+        if (svc.Dependencies === undefined) {
+            if (svc.Type === "Static") {
+                var output = new svc.Service();
+                a.StaticServices[output.Name] = output;
+                return output;
+            } else {
+                return new svc.Service();
+            }
+        } else {
+
+            // with deps
+            var depsString = "";
+            var outputString = "theService = new svc.Service(";
+            var theService = undefined;
+            for (var i = 0; i < svc.Dependencies.length; i++) {
+                depsString += "var d" + i + " = a.GetDependency('" + svc.Dependencies[i] + "'); ";
+                outputString += "d" + i;
+                if (i < svc.Dependencies.length - 1)
+                    outputString += ",";
+            }
+            outputString += ");";
+            eval(depsString + outputString);
+            // ReSharper disable once ConditionIsAlwaysConst
+            // ReSharper disable once HeuristicallyUnreachableCode
+            if (theService !== undefined) {
+                if (svc.Type === "Static") {
+                    a.StaticDependencies[svc.Name] = theService;
+                }
+            }
+
+            return theService;
+        }
     }
 
-    a.Initialize = function () {
+    // dependencies
+    a.Dependencies = {};
+
+    // static dependencies
+    a.StaticDependencies = {};
+
+    // mocking
+    a.MockDependency = function (name, type, dep) {
+        a.Dependencies[name] = undefined;
+        a.AddDependency(name, type, [], dep);
+    }
+
+    // add depenency
+    a.AddDependency = function (name, type, deps, dep) {
+        if (IsNullOrUndefined(deps)) {
+            dep = deps;
+            deps = undefined;
+        }
+        
+        if (IsNullOrUndefined(name) || IsNullOrUndefined(type) || name.IsNullOrEmpty() || type.IsNullOrEmpty() || !a.Helpers.IsFunc(dep))
+            throw "AddDependency: name and type must be a string and dep must be a function";
+        if (a.Dependencies[name] !== undefined)
+            throw "AddDependency: dependency '" + name + "' already exists";
+
+        a.Dependencies[name] = { Name: name, Dependency: dep, Dependencies: deps, Type: type };
+    }
+
+    // get dependency
+    a.GetDependency = function (dep) {
+        var output = a.Dependencies[dep];
+        if (IsNullOrUndefined(output))
+            throw "GetDependency: '' is not a dependency";
+
+        // check static
+        if (output.Type === "Static" && a.StaticDependencies[name] !== undefined) {
+            return a.StaticDependencies[name];
+        }
+
+        // get deps string
+        if (output.Dependencies !== undefined) {
+            var depsString = "";
+            var outputString = "theDep = new output.Dependency(";
+            var theDep = undefined;
+            for (var i = 0; i < output.Dependencies.length; i++) {
+                depsString += "var d" + i + " = a.GetDependency('" + output.Dependencies[i] + "'); ";
+                outputString += "d" + i;
+                if (i < output.Dependencies.length - 1)
+                    outputString += ",";
+            }
+            outputString += ");";
+            eval(depsString + outputString);
+            // ReSharper disable once ConditionIsAlwaysConst
+            // ReSharper disable once HeuristicallyUnreachableCode
+            if (theDep !== undefined) {
+                if (output.Type === "Static") {
+                    a.StaticDependencies[output.Name] = theDep;
+                }
+
+            }
+
+            return theDep;
+
+        } else {
+
+            if (output.Type === "Static") {
+                var depend = new output.Dependency();
+                a.StaticDependencies[output.Name] = depend;
+                return depend;
+
+            } else {
+                return new output.Dependency();
+            }
+        }
+    }
+
+    // kick the whole thing off!
+    a.Initialize = function (callback) {
 
         // go
         a.DomHelper(window).load(function (e) {
@@ -474,11 +617,50 @@ if (jQuery === undefined) {
 
             });
 
+            if (a.Helpers.IsFunc(callback))
+                callback();
+
         });
 
     };
 
+
+
+
+    /*
+     * 
+     * Another.Dependencies
+     * 
+     */
+
+    // create dependencies app
+    a.DependenciesApplication = a.CreateApplication("Another.Dependencies");
+
+    // closure
+    (function (ad) {
+
+        ad.AddDependency("Http", "Static", [], function () {
+
+            this.Get = a.DomHelper.get;
+            this.Post = a.DomHelper.post;
+            this.Ajax = a.DomHelper.ajax;
+
+        });
+
+        ad.AddDependency("DomHelper", "Static", [], function () {
+
+            return a.DomHelper;
+
+        });
+
+    })(a.DependenciesApplication);
+
+
+
+
 })(Another);
+
+
 
 
 

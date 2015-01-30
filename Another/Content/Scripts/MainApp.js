@@ -3,6 +3,19 @@ var mainApp = Another.CreateApplication("Main");
 
 (function (app) {
 
+    // add dep
+    app.AddDependency("TestDep", "PerRequest", ["DomHelper"], function (domHelper) {
+
+        this.Funk = function () {
+
+            var x = domHelper("#funkyfunks");
+            console.log(domHelper);
+            if (x.length < 1) throw "MOCK ME DAMN YOU";
+
+        };
+
+    });
+
     app.Configure(function () {
 
         // subscribe
@@ -10,6 +23,9 @@ var mainApp = Another.CreateApplication("Main");
             alert("Page not found");
             console.log(e);
         });
+        
+        var d = app.GetDependency("TestDep");
+        //d.Funk();
 
         // configure routing
         app.ConfigureRoutes("section#main", function (builder) {

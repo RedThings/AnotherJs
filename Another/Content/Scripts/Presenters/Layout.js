@@ -30,17 +30,12 @@
 
         // test crap
         var svc = presenter.GetService("FormService");
-        //svc.GetData();
-        var svc2 = presenter.GetService("NoDomHelper");
+        svc.GetData();
 
         
 
     }
 
-    app.Configure(function() {
-
-        app.CreatePresenter("Layout", layoutPresenter);
-
-    });
+    app.CreatePresenter("Layout", layoutPresenter);
 
 })(mainApp);
