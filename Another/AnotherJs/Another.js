@@ -70,9 +70,9 @@ if (jQuery === undefined) {
                 return v.toString(16);
             });
 
-            return forId ? rand.replace("-", "") : rand;
+            return forId ? "id_" + rand.replace("-", "") : rand;
         },
-        Clone:function(obj) {
+        Clone: function (obj) {
             return JSON.parse(JSON.stringify(obj));
         }
 
@@ -322,21 +322,21 @@ if (jQuery === undefined) {
 
         }
 
-        // checkgroup
-        this.BindCheckGroup = function (opts) {
+        // bind repeater controls
+        this.BindRepeaterControl = function (opts) {
 
             // check
             if (typeof opts.data === "string") {
-
+                
                 ts.Bind(opts.data, function (newVal) {
 
                     opts.data = newVal;
-                    ts.BindCheckGroup(opts);
+                    ts.BindRepeaterControl(opts);
 
                 });
 
             } else {
-
+                
                 // get element
                 var el = ts.DomHelper(opts.selector);
 
@@ -349,85 +349,206 @@ if (jQuery === undefined) {
                     // kill children
                     el.children().remove();
 
-                    // name
-                    var newName = a.Helpers.GetRandom(true);
-
-                    // evemt
-                    var evName = "click";
-                    var isRadio = opts.type === "radio";
+                    // switch type and do general stuff
+                    switch (opts.type) {
+                        case "select":
+                            {
+                                if (opts.multi === true) {
+                                    el.attr("multiple", "multiple");
+                                }
+                                break;
+                            }
+                        default: break;
+                    }
 
                     // create children
-                    opts.data.forEach(function (d) {
+                    var newName = a.Helpers.GetRandom(true);
+                    if (opts.data !== undefined && opts.data.length > 0) {
+                        opts.data.forEach(function(d) {
 
-                        // create els
-                        var newId = a.Helpers.GetRandom(true);
-                        var newInput = ts.DomHelper("<input" + (isRadio ? " name='" + newName + "'" : "") + " id='" + newId + "' type='" + (isRadio ? "radio" : "checkbox") + "' class='another-" + (isRadio ? "radio" : "checkbox") + "' value='" + d[opts.dataValueField] + "' />");
-                        var newLabel = ts.DomHelper("<span class='another-chklabel' for='" + newId + "'>" + d[opts.dataTextField] + "</label>");
+                            // start
+                            var newInput;
+                            var newInputHtml;
+                            var newLabelHtml;
+                            var newLabel;
+                            var evName;
 
-                        // bind
-                        newInput.bind(evName, function (e) {
+                            // switch types
+                            switch (opts.type) {
+                            case "radio":
+                            {
+                                newInputHtml = "<input type='radio' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
+                                newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
+                                newInput = ts.DomHelper(newInputHtml);
+                                newLabel = ts.DomHelper(newLabelHtml);
+                                evName = "click";
+                                el.parent().children("label:first").attr("for", newName);
+                                break;
+                            }
+                            case "checkbox":
+                            {
+                                newInputHtml = "<input type='checkbox' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
+                                newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
+                                newInput = ts.DomHelper(newInputHtml);
+                                newLabel = ts.DomHelper(newLabelHtml);
+                                evName = "click";
+                                el.parent().children("label:first").attr("for", newName);
+                                break;
+                            }
+                            case "select":
+                            {
+                                newInputHtml = "<option value='" + d[opts.dataValueField] + "'>" + d[opts.dataTextField] + "</option>";
+                                newInput = ts.DomHelper(newInputHtml);
+                                break;
+                            }
+                            default:
+                                throw "BindRepeaterControl: " + opts.type + " not implemented";
+                            }
 
-                            el.data("change_from_element", true);
+                            // not select
+                            if (opts.type !== "select") {
 
-                            if (isRadio) {
-                                ts.Model[opts.dataProp] = newInput.val();
-                            } else {
-                                // create data bucket
-                                if (ts.Model[opts.dataProp] === undefined)
-                                    ts.Model[opts.dataProp] = [];
+                                // bind change / click / whatever
+                                newInput.bind(evName, function(e) {
 
-                                // create temp
-                                var tempBucket = [];
-                                ts.Model[opts.dataProp].forEach(function(tmp) {
-                                    tempBucket.push(tmp);
+                                    // denote coming from element event
+                                    el.data("change_from_element", true);
+
+                                    // 
+                                    if (opts.multi !== true) {
+
+                                        // switch type
+                                        switch (opts.type) {
+
+                                        case "checkbox":
+                                        {
+                                            var ischkd = newInput[0].checked;
+                                            theGroup.forEach(function(theEl) {
+                                                theEl[0].checked = false;
+                                            });
+                                            newInput[0].checked = ischkd;
+                                            if (ischkd) {
+                                                ts.Model[opts.model] = newInput.val();
+                                            } else {
+                                                ts.Model[opts.model] = undefined;
+                                            }
+                                            break;
+                                        }
+                                        default:
+                                        {
+                                            ts.Model[opts.model] = newInput.val();
+                                            break;
+                                        }
+                                        }
+                                        if (opts.type === "checkbox") {
+
+                                        }
+
+                                    } else {
+
+                                        // create data bucket
+                                        if (ts.Model[opts.model] === undefined)
+                                            ts.Model[opts.model] = [];
+
+                                        // create temp
+                                        var tempBucket = [];
+                                        ts.Model[opts.model].forEach(function(tmp) {
+                                            tempBucket.push(tmp);
+                                        });
+
+                                        // add
+                                        if (tempBucket.indexOf(newInput.val()) < 0) {
+                                            if (newInput[0].checked || newInput.attr("selected") === "selected") {
+                                                tempBucket.push(newInput.val());
+                                            }
+                                        } else {
+                                            if (!newInput[0].checked || newInput.attr("selected") !== "selected") {
+                                                var indx = tempBucket.indexOf(newInput.val());
+                                                tempBucket.splice(indx, 1);
+                                            }
+                                        }
+
+                                        // finally apply
+                                        ts.Model[opts.model] = tempBucket;
+
+                                    }
+
                                 });
-
-                                // add
-                                if (tempBucket.indexOf(newInput.val()) < 0) {
-                                    if (newInput[0].checked) {
-                                        tempBucket.push(newInput.val());
-                                    }
-                                } else {
-                                    if (!newInput[0].checked) {
-                                        var indx = tempBucket.indexOf(newInput.val());
-                                        tempBucket.splice(indx, 1);
-                                    }
-                                }
-
-                                // finally apply
-                                ts.Model[opts.dataProp] = tempBucket;
 
                             }
 
-                            
+                            // add
+                            el.append(newInput);
+                            switch (opts.type) {
+
+                            case "radio":
+                            case "checkbox":
+                            {
+                                // ReSharper disable once UsageOfPossiblyUnassignedValue
+                                el.append(newLabel);
+                                break;
+                            }
+                            default:
+                                break;
+                            }
+                            theGroup.push(newInput);
 
                         });
 
+                    }
 
-                        // finally, add
-                        el.append(newInput);
-                        el.append(newLabel);
-                        theGroup.push(newInput);
+                    // do select binding
+                    if (opts.data !== undefined && opts.type === "select") {
+                        
+                        // bind change
+                        el.bind("change", function (e) {
+                            // denote coming from element event
+                            el.data("change_from_element", true);
+                            // set model
+                            ts.Model[opts.model] = el.val();
+                        });
 
-                    });
+                    }
 
                     // bind overall
-                    ts.Bind(opts.dataProp, function (newVal) {
-                        
+                    ts.Bind(opts.model, function (newVal) {
+
                         if (el.data("change_from_element") === true) {
                             el.data("change_from_element", false);
                         } else {
                             theGroup.forEach(function (jEl) {
-                                
+
                                 var chekd;
-                                if (opts.multiselect === true) {
-                                    chekd = ts.Model[opts.dataProp] !== undefined && ts.Model[opts.dataProp].indexOf(jEl.val()) > -1;
+                                if (opts.multi === true) {
+                                    chekd = ts.Model[opts.model] !== undefined && ts.Model[opts.model].indexOf(jEl.val()) > -1;
                                 } else {
-                                    chekd = ts.Model[opts.dataProp] == jEl.val();
+                                    chekd = ts.Model[opts.model] == jEl.val();
                                 }
-                                jEl[0].checked = chekd;
+                                switch (opts.type) {
+                                    case "radio":
+                                    case "checkbox":
+                                        {
+                                            jEl.checked = chekd;
+                                            break;
+                                        }
+                                    case "select":
+                                        {
+                                            if (chekd === true) {
+                                                jEl.attr("selected", "selected");
+                                            } else {
+                                                jEl.removeAttr("selected");
+                                            }
+                                        }
+                                    default:
+                                        break;
+                                }
 
                             });
+                        }
+
+                        // finally
+                        if (!IsNullOrUndefined(opts.onChange) && a.Helpers.IsFunc(opts.onChange)) {
+                            opts.onChange(ts.Model[opts.model]);
                         }
                     });
 
@@ -435,16 +556,38 @@ if (jQuery === undefined) {
 
             }
 
-
-
         }
 
-        // push change
-        this.PushChange = function(pushto, func) {
+        // form
+        this.Form = function (selector, onSubmitFunc) {
 
-            var temp = a.Helpers.Clone(pushto);
-            func(temp);
-            return temp;
+            var theForm = ts.DomHelper(selector);
+            if (theForm.length > 0) {
+
+                // set dirty
+                theForm.IsDirty = function () {
+                    return theForm.data("isDirty") === true;
+                };
+                // get children
+                var childs = theForm.children();
+                // bind
+                childs.each(function (i, chld) {
+                    var child = ts.DomHelper(chld);
+                    child.change(function () {
+                        theForm.data("isDirty", true);
+                    });
+                });
+
+                // set submit
+                theForm.submit(function (e) {
+                    e.preventDefault();
+                    onSubmitFunc(theForm);
+                    return false;
+                });
+            }
+
+            return theForm;
+
         }
 
         // set observer
