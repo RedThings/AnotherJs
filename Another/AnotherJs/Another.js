@@ -17,9 +17,14 @@ if (window.Another === undefined) {
     window.Another = {};
 }
 
+// error
+window.onerror = function (msg, url, lineNumber, colno, err) {
+    throw err;
+};
+
 // check jQuery
 if (jQuery === undefined) {
-    throw "Another currently uses jQuery v2.x as a dom helper";
+    throw new Error("Another currently uses jQuery v2.x as a dom helper");
 }
 
 // closure
@@ -34,7 +39,7 @@ if (jQuery === undefined) {
         },
         StripLast: function (str) {
             if (str === undefined || str === null || str === "")
-                throw "EndsWith: str cannot be null, empty or undefined";
+                throw new Error("EndsWith: str cannot be null, empty or undefined");
             return str.substr(0, str.length - 1);
         },
         StartsWith: function (str, chars) {
@@ -43,7 +48,7 @@ if (jQuery === undefined) {
         },
         StripFirst: function (str) {
             if (str === undefined || str === null || str === "")
-                throw "EndsWith: str cannot be null, empty or undefined";
+                throw new Error("EndsWith: str cannot be null, empty or undefined");
             return str.substr(1);
         },
         StringIsNullOrEmpty: function (str) {
@@ -54,7 +59,7 @@ if (jQuery === undefined) {
         },
         Any: function (collection, lambda) {
             if (a.Helpers.IsUndefinedOrNull(lambda))
-                throw "Helpers.Any: lambda cannot be undefined";
+                throw new Error("Helpers.Any: lambda cannot be undefined");
             return !a.Helpers.IsUndefinedOrNull(collection) && collection.length > 0 && lambda(collection).length > 0;
         },
         IsFunc: function (func) {
@@ -74,6 +79,25 @@ if (jQuery === undefined) {
         },
         Clone: function (obj) {
             return JSON.parse(JSON.stringify(obj));
+        },
+        EscapeRegExp: function (str) {
+            return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+        },
+        ReplaceAll: function (str, mtch, replWith) {
+            str = str.replace(new RegExp(a.Helpers.EscapeRegExp(mtch), 'g'), replWith);
+            return str;
+        },
+        FormatString: function (str, arr) {
+            for (var i = 0; i < arr.length; i++) {
+                var replWith = arr[i];
+                if (IsNullOrUndefined(replWith)) {
+                    replWith = '';
+                } else {
+                    replWith = replWith.toString();
+                }
+                str = a.Helpers.ReplaceAll(str, "{" + i + "}", replWith);
+            }
+            return str;
         }
 
     };
@@ -99,17 +123,37 @@ if (jQuery === undefined) {
         return a.Helpers.IsUndefinedOrNull(obj);
     }
     if (!a.Helpers.StartsWith(jQuery.fn.jquery, "2.")) {
-        throw "Another currently uses jQuery v2.x as a dom helper";
+        throw new Error("Another currently uses jQuery v2.x as a dom helper");
     }
 
     // dom helper
     a.DomHelper = jQuery;
 
     // presenter
-    a.AnotherPresenter = function (name, model, domHelper) {
+    a.AnotherPresenter = function (name, model, container) {
 
         // this
         var ts = this;
+
+        // check
+        if (IsNullOrUndefined(container) || container.length < 1)
+            throw new Error("Presenter: container must be at least one element");
+
+        // dom helper
+        var domHelper = a.GetDependency("DomHelper");
+        this.DomHelper = domHelper;
+
+        // container
+        this.Container = container;
+
+        // element
+        this.Element = function (selector) {
+            var output = ts.Container.find(selector);
+            if (output.length < 1) {
+                output = domHelper("<div />");
+            }
+            return output;
+        }
 
         // observables
         var _observables = [];
@@ -188,9 +232,6 @@ if (jQuery === undefined) {
             }
         }
 
-        // dom helper
-        this.DomHelper = domHelper;
-
         // model
         this.Model = model;
 
@@ -203,8 +244,8 @@ if (jQuery === undefined) {
         // Add element observer
         this.BindElement = function (propName, selector, func) {
             if (a.Helpers.IsUndefinedOrNull(propName) || propName.IsNullOrEmpty() || selector.IsNullOrEmpty())
-                throw "BindElement: propName and selector must be a string with value";
-            var el = a.DomHelper(selector);
+                throw ("BindElement: propName and selector must be a string with value");
+            var el = ts.Element(selector);
             _observables.push({ PropName: propName, Callback: func, Elements: [el] });
             return el;
         }
@@ -212,10 +253,10 @@ if (jQuery === undefined) {
         // Add element observer
         this.BindElements = function (propName, selectors, func) {
             if (a.Helpers.IsUndefinedOrNull(propName) || propName.IsNullOrEmpty() || selectors.IsNullOrEmpty())
-                throw "BindElements: propName and selectors must be a string with value";
+                throw new Error("BindElements: propName and selectors must be a string with value");
             var els = [];
             selectors.forEach(function (sl) {
-                els.push(a.DomHelper(sl));
+                els.push(ts.Element(sl));
             });
             _observables.push({ PropName: propName, Callback: func, Elements: els });
             return els;
@@ -225,8 +266,8 @@ if (jQuery === undefined) {
         // Add element observer
         this.BindElementStatic = function (val, selector) {
             if (a.Helpers.IsUndefinedOrNull(val) || val.IsNullOrEmpty() || selector.IsNullOrEmpty())
-                throw "BindElementStatic: val and selector must be a string with value";
-            var el = a.DomHelper(selector);
+                throw ("BindElementStatic: val and selector must be a string with value");
+            var el = ts.Element(selector);
             el.html(val);
             el.val(val);
             return el;
@@ -235,10 +276,10 @@ if (jQuery === undefined) {
         // Add element observer
         this.BindElementsStatic = function (val, selectors) {
             if (a.Helpers.IsUndefinedOrNull(val) || val.IsNullOrEmpty() || selectors.IsNullOrEmpty())
-                throw "BindElementsStatic: val and selectors must be a string with value";
+                throw new Error("BindElementsStatic: val and selectors must be a string with value");
             var els = [];
             selectors.forEach(function (sl) {
-                var el = a.DomHelper(sl);
+                var el = ts.Element(sl);
                 el.html(val);
                 el.val(val);
                 els.push(el);
@@ -252,7 +293,7 @@ if (jQuery === undefined) {
 
             // check
             if (typeof opts.data === "string") {
-
+                
                 // bind
                 ts.Bind(opts.data, function (newVal) {
 
@@ -260,64 +301,71 @@ if (jQuery === undefined) {
                     ts.BindRepeater(opts);
 
                 });
-            } else {
 
+                return ts.Element(opts.selector);
+
+            } else {
+                
                 // el
-                var el = ts.DomHelper(opts.selector);
+                var el = ts.Element(opts.selector);
 
                 // check
-                if (el.length > 0) {
+                if (el.parent().length <= 0) {
+                    
+                    var prnt = domHelper("<div />");
+                    prnt.append(el);
+                    
+                }
 
-                    // parent
-                    var parent = el.parent();
-                    parent.hide();
+                // parent
+                var parent = el.parent();
+                parent.hide();
 
-                    // check
-                    if (parent.length < 1) throw "A repeated element must have a parent";
+                // check
+                if (parent.length < 1) throw ("A repeated element must have a parent");
 
-                    // clone text
-                    var cloneText = el[0].outerHTML;
+                // clone text
+                var cloneText = el[0].outerHTML;
 
-                    // loop parent elements and remove
-                    parent.children().each(function (i, childEl) {
-                        childEl.parentNode.removeChild(childEl);
-                    });
-                    // put back
-                    el = ts.DomHelper(cloneText);
-                    parent.append(el);
+                // loop parent elements and remove
+                parent.children().each(function (i, childEl) {
+                    childEl.parentNode.removeChild(childEl);
+                });
+                // put back
+                el = domHelper(cloneText);
+                parent.append(el);
 
-                    // find element
-                    if (el.length > 0 && a.Helpers.IsArray(opts.data)) {
+                // find element
+                if (el.length > 0 && a.Helpers.IsArray(opts.data)) {
 
-                        // hide el
-                        el.hide();
+                    // hide el
+                    el.hide();
 
-                        // loop data
-                        var rowCount = 0;
-                        opts.data.forEach(function (row) {
+                    // loop data
+                    var rowCount = 0;
+                    opts.data.forEach(function (row) {
 
-                            var newEl = ts.DomHelper(cloneText);
-                            newEl.removeAttr("id");
-                            newEl.children().each(function (i, theEl) {
-                                var jTheEl = ts.DomHelper(theEl);
-                                var theId = jTheEl.attr("id");
-                                if (theId !== undefined && theId.length > 0) {
-                                    jTheEl.attr("id", theId + "[" + rowCount + "]");
-                                }
-                            });
-                            parent.append(newEl);
-                            opts.onRowBinding(newEl, row);
-                            newEl.show();
-                            rowCount++;
+                        var newEl = domHelper(cloneText);
+                        newEl.removeAttr("id");
+                        newEl.children().each(function (i, theEl) {
+                            var jTheEl = domHelper(theEl);
+                            var theId = jTheEl.attr("id");
+                            if (!IsNullOrUndefined(theId) && theId.length > 0) {
+                                jTheEl.attr("id", theId + "[" + rowCount + "]");
+                            }
                         });
+                        parent.append(newEl);
+                        opts.onRowBinding(newEl, row);
+                        newEl.show();
+                        rowCount++;
+                    });
 
-                        // FINALLY
-                        parent.show();
-
-                    }
+                    // FINALLY
+                    parent.show();
 
                 }
 
+                return el;
             }
 
         }
@@ -327,7 +375,6 @@ if (jQuery === undefined) {
 
             // check
             if (typeof opts.data === "string") {
-                
                 ts.Bind(opts.data, function (newVal) {
 
                     opts.data = newVal;
@@ -335,81 +382,92 @@ if (jQuery === undefined) {
 
                 });
 
-            } else {
-                
+                var outputEl = ts.Element(opts.selector);
+                if (outputEl.length < 1) outputEl = ts.DomHelper("<div />");
+                return outputEl;
+            }
+            else {
+
                 // get element
-                var el = ts.DomHelper(opts.selector);
+                var el = ts.Element(opts.selector);
 
-                // checj
-                if (el.length > 0) {
+                // check and mock if necessary
+                if (el.length <= 0)
+                    el = ts.DomHelper("<div />");
 
-                    // group
-                    var theGroup = [];
+                // group
+                var theGroup = [];
 
-                    // kill children
-                    el.children().remove();
+                // kill children
+                el.children().remove();
 
-                    // switch type and do general stuff
-                    switch (opts.type) {
-                        case "select":
-                            {
-                                if (opts.multi === true) {
-                                    el.attr("multiple", "multiple");
-                                }
-                                break;
+                // switch type and do general stuff
+                switch (opts.type) {
+                    case "select":
+                        {
+                            if (opts.multi === true) {
+                                el.attr("multiple", "multiple");
                             }
-                        default: break;
-                    }
+                            break;
+                        }
+                    default: break;
+                }
 
-                    // create children
-                    var newName = a.Helpers.GetRandom(true);
-                    if (opts.data !== undefined && opts.data.length > 0) {
-                        opts.data.forEach(function(d) {
+                // create children
+                var newName = a.Helpers.GetRandom(true);
+                if (opts.data === undefined || opts.data.length <= 0) {
 
-                            // start
-                            var newInput;
-                            var newInputHtml;
-                            var newLabelHtml;
-                            var newLabel;
-                            var evName;
+                    return el;
 
-                            // switch types
-                            switch (opts.type) {
+                } else {
+                    opts.data.forEach(function (d) {
+
+                        // start
+                        var newInput;
+                        var newInputHtml;
+                        var newLabelHtml;
+                        var newLabel;
+                        var evName;
+
+                        // switch types
+                        switch (opts.type) {
                             case "radio":
-                            {
-                                newInputHtml = "<input type='radio' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
-                                newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
-                                newInput = ts.DomHelper(newInputHtml);
-                                newLabel = ts.DomHelper(newLabelHtml);
-                                evName = "click";
-                                el.parent().children("label:first").attr("for", newName);
-                                break;
-                            }
+                                {
+                                    newInputHtml = "<input type='radio' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
+                                    newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
+                                    newInput = domHelper(newInputHtml);
+                                    newLabel = domHelper(newLabelHtml);
+                                    evName = "click";
+                                    el.parent().children("label:first").attr("for", newName);
+                                    break;
+                                }
                             case "checkbox":
-                            {
-                                newInputHtml = "<input type='checkbox' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
-                                newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
-                                newInput = ts.DomHelper(newInputHtml);
-                                newLabel = ts.DomHelper(newLabelHtml);
-                                evName = "click";
-                                el.parent().children("label:first").attr("for", newName);
-                                break;
-                            }
+                                {
+                                    newInputHtml = "<input type='checkbox' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
+                                    newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
+                                    newInput = domHelper(newInputHtml);
+                                    newLabel = domHelper(newLabelHtml);
+                                    evName = "click";
+                                    el.parent().children("label:first").attr("for", newName);
+                                    break;
+                                }
                             case "select":
-                            {
-                                newInputHtml = "<option value='" + d[opts.dataValueField] + "'>" + d[opts.dataTextField] + "</option>";
-                                newInput = ts.DomHelper(newInputHtml);
-                                break;
-                            }
+                                {
+                                    newInputHtml = "<option value='" + d[opts.dataValueField] + "'>" + d[opts.dataTextField] + "</option>";
+                                    newInput = domHelper(newInputHtml);
+                                    break;
+                                }
                             default:
-                                throw "BindRepeaterControl: " + opts.type + " not implemented";
-                            }
+                                throw new Error("BindRepeaterControl: " + opts.type + " not implemented");
+                        }
 
-                            // not select
-                            if (opts.type !== "select") {
+                        // not select
+                        if (opts.type !== "select") {
 
-                                // bind change / click / whatever
-                                newInput.bind(evName, function(e) {
+                            // bind change / click / whatever
+                            if (!IsNullOrUndefined(evName) && newInput.data(evName + "_bound") !== true) {
+                                newInput.data(evName + "_bound", true);
+                                newInput.bind(evName, function (e) {
 
                                     // denote coming from element event
                                     el.data("change_from_element", true);
@@ -420,25 +478,25 @@ if (jQuery === undefined) {
                                         // switch type
                                         switch (opts.type) {
 
-                                        case "checkbox":
-                                        {
-                                            var ischkd = newInput[0].checked;
-                                            theGroup.forEach(function(theEl) {
-                                                theEl[0].checked = false;
-                                            });
-                                            newInput[0].checked = ischkd;
-                                            if (ischkd) {
-                                                ts.Model[opts.model] = newInput.val();
-                                            } else {
-                                                ts.Model[opts.model] = undefined;
-                                            }
-                                            break;
-                                        }
-                                        default:
-                                        {
-                                            ts.Model[opts.model] = newInput.val();
-                                            break;
-                                        }
+                                            case "checkbox":
+                                                {
+                                                    var ischkd = newInput[0].checked;
+                                                    theGroup.forEach(function (theEl) {
+                                                        theEl[0].checked = false;
+                                                    });
+                                                    newInput[0].checked = ischkd;
+                                                    if (ischkd) {
+                                                        ts.Model[opts.model] = newInput.val();
+                                                    } else {
+                                                        ts.Model[opts.model] = undefined;
+                                                    }
+                                                    break;
+                                                }
+                                            default:
+                                                {
+                                                    ts.Model[opts.model] = newInput.val();
+                                                    break;
+                                                }
                                         }
                                         if (opts.type === "checkbox") {
 
@@ -452,7 +510,7 @@ if (jQuery === undefined) {
 
                                         // create temp
                                         var tempBucket = [];
-                                        ts.Model[opts.model].forEach(function(tmp) {
+                                        ts.Model[opts.model].forEach(function (tmp) {
                                             tempBucket.push(tmp);
                                         });
 
@@ -474,86 +532,101 @@ if (jQuery === undefined) {
                                     }
 
                                 });
-
                             }
+                        }
 
-                            // add
-                            el.append(newInput);
-                            switch (opts.type) {
+                        // add
+                        el.append(newInput);
+                        switch (opts.type) {
 
                             case "radio":
                             case "checkbox":
-                            {
-                                // ReSharper disable once UsageOfPossiblyUnassignedValue
-                                el.append(newLabel);
-                                break;
-                            }
+                                {
+                                    // ReSharper disable once UsageOfPossiblyUnassignedValue
+                                    el.append(newLabel);
+                                    break;
+                                }
                             default:
                                 break;
-                            }
-                            theGroup.push(newInput);
-
-                        });
-
-                    }
-
-                    // do select binding
-                    if (opts.data !== undefined && opts.type === "select") {
-                        
-                        // bind change
-                        el.bind("change", function (e) {
-                            // denote coming from element event
-                            el.data("change_from_element", true);
-                            // set model
-                            ts.Model[opts.model] = el.val();
-                        });
-
-                    }
-
-                    // bind overall
-                    ts.Bind(opts.model, function (newVal) {
-
-                        if (el.data("change_from_element") === true) {
-                            el.data("change_from_element", false);
-                        } else {
-                            theGroup.forEach(function (jEl) {
-
-                                var chekd;
-                                if (opts.multi === true) {
-                                    chekd = ts.Model[opts.model] !== undefined && ts.Model[opts.model].indexOf(jEl.val()) > -1;
-                                } else {
-                                    chekd = ts.Model[opts.model] == jEl.val();
-                                }
-                                switch (opts.type) {
-                                    case "radio":
-                                    case "checkbox":
-                                        {
-                                            jEl.checked = chekd;
-                                            break;
-                                        }
-                                    case "select":
-                                        {
-                                            if (chekd === true) {
-                                                jEl.attr("selected", "selected");
-                                            } else {
-                                                jEl.removeAttr("selected");
-                                            }
-                                        }
-                                    default:
-                                        break;
-                                }
-
-                            });
                         }
+                        theGroup.push(newInput);
 
-                        // finally
-                        if (!IsNullOrUndefined(opts.onChange) && a.Helpers.IsFunc(opts.onChange)) {
-                            opts.onChange(ts.Model[opts.model]);
-                        }
                     });
 
                 }
 
+                // do select binding
+                if (opts.data !== undefined && opts.type === "select") {
+
+                    if (el.data("changed_bound") !== true) {
+
+                        // bind change
+                        el.data("changed_bound", true);
+                        el.bind("change", function(e) {
+
+                            // denote coming from element event
+                            el.data("change_from_element", true);
+
+                            // set model
+                            var theDataInner = el.val();
+                            ts.Model[opts.model] = IsNullOrUndefined(theDataInner) ? [] : theDataInner;
+
+                        });
+
+                    }
+
+                    // set model and trigger once!
+                    el.data("change_from_element", true);
+                    var theData = el.val();
+                    ts.Model[opts.model] = IsNullOrUndefined(theData) ? [] : theData;
+                    el.trigger("change");
+
+                }
+
+                // bind overall
+                ts.Bind(opts.model, function (newVal) {
+
+                    if (el.data("change_from_element") === true) {
+                        el.data("change_from_element", false);
+                    } else {
+                        theGroup.forEach(function (jEl) {
+
+                            var chekd;
+                            if (opts.multi === true) {
+                                chekd = !IsNullOrUndefined(ts.Model[opts.model]) && ts.Model[opts.model].indexOf(jEl.val()) > -1;
+                            } else {
+                                chekd = ts.Model[opts.model] == jEl.val();
+                            }
+                            switch (opts.type) {
+                                case "radio":
+                                case "checkbox":
+                                    {
+                                        jEl.checked = chekd;
+                                        break;
+                                    }
+                                case "select":
+                                    {
+                                        if (chekd === true) {
+                                            jEl.attr("selected", "selected");
+                                        } else {
+                                            jEl.removeAttr("selected");
+                                        }
+                                    }
+                                default:
+                                    break;
+                            }
+
+                        });
+                    }
+
+                    // finally
+                    if (!IsNullOrUndefined(opts.onChange) && a.Helpers.IsFunc(opts.onChange)) {
+                        opts.onChange(ts.Model[opts.model]);
+                    }
+                });
+
+                //
+                return el;
             }
 
         }
@@ -561,31 +634,30 @@ if (jQuery === undefined) {
         // form
         this.Form = function (selector, onSubmitFunc) {
 
-            var theForm = ts.DomHelper(selector);
-            if (theForm.length > 0) {
+            var theForm = ts.Element(selector);
+            if (theForm.length <= 0)
+                theForm = domHelper("<form />");
 
-                // set dirty
-                theForm.IsDirty = function () {
-                    return theForm.data("isDirty") === true;
-                };
-                // get children
-                var childs = theForm.children();
-                // bind
-                childs.each(function (i, chld) {
-                    var child = ts.DomHelper(chld);
-                    child.change(function () {
-                        theForm.data("isDirty", true);
-                    });
+            // set dirty
+            theForm.IsDirty = function () {
+                return theForm.data("isDirty") === true;
+            };
+            // get children
+            var childs = theForm.children();
+            // bind
+            childs.each(function (i, chld) {
+                var child = domHelper(chld);
+                child.change(function () {
+                    theForm.data("isDirty", true);
                 });
+            });
 
-                // set submit
-                theForm.submit(function (e) {
-                    e.preventDefault();
-                    onSubmitFunc(theForm);
-                    return false;
-                });
-            }
-
+            // set submit
+            theForm.submit(function (e) {
+                e.preventDefault();
+                onSubmitFunc(theForm);
+                return false;
+            });
             return theForm;
 
         }
@@ -617,9 +689,6 @@ if (jQuery === undefined) {
             a.SubscribeToEvent(evName, func);
             return ts;
         }
-
-        // 
-
     }
 
     // application class
@@ -627,6 +696,17 @@ if (jQuery === undefined) {
 
         // this
         var ts = this;
+
+        // on error
+        this.OnError = function (errFunc) {
+
+            // set
+            window.onerror = function (aa, b, c, d, e) {
+                return errFunc(e) || true;
+            };
+
+            return true;
+        }
 
         // config
         this.Configurations = [];
@@ -656,7 +736,7 @@ if (jQuery === undefined) {
 
             // check
             if (a.PresenterCallbacks[name] !== undefined)
-                throw "CreatePresenter: '" + name + "' already exists.";
+                throw ("CreatePresenter: '" + name + "' already exists.");
 
             // add to application collection
             a.PresenterCallbacks[name] = func;
@@ -666,8 +746,8 @@ if (jQuery === undefined) {
         };
 
         // initialize presenter
-        this.InitializePresenter = function (name, arrayOfParams, callback) {
-            return a.InitializePresenter(name, arrayOfParams, callback);
+        this.InitializePresenter = function (name, container, arrayOfParams, callback) {
+            return a.InitializePresenter(name, container, arrayOfParams, callback);
         }
 
         // get service
@@ -717,19 +797,16 @@ if (jQuery === undefined) {
     a.PresenterCallbacks = {};
 
     // Initialize presenter
-    a.InitializePresenter = function (name, arrayOfParams, callback) {
+    a.InitializePresenter = function (name, container, arrayOfParams, callback) {
 
         if (typeof arrayOfParams === "function") {
             callback = arrayOfParams;
             arrayOfParams = undefined;
         }
+        if (typeof container === "string")
+            container = a.DomHelper(container);
 
-        if (typeof callback === "object") {
-            arrayOfParams = callback;
-            callback = undefined;
-        }
-
-
+        // 
         a.RaiseEvent("OnBeginPresenterInitializing", name);
 
         // find
@@ -737,14 +814,13 @@ if (jQuery === undefined) {
 
         // check
         if (a.Helpers.IsUndefinedOrNull(pCallback))
-            throw "Initialize Presenter: Cannot find presenter '" + name + "'";
+            throw ("Initialize Presenter: Cannot find presenter '" + name + "'");
 
         a.RaiseEvent("OnPresenterInitializing", pCallback);
 
         // found so initialize
         var model = {};
-        var domHelper = a.GetDependency("DomHelper");
-        var presenter = new a.AnotherPresenter(name, model, domHelper);
+        var presenter = new a.AnotherPresenter(name, model, container);
         presenter.SetObserve();
 
         if (IsNullOrUndefined(arrayOfParams) || arrayOfParams.IsNullOrEmpty()) {
@@ -823,9 +899,9 @@ if (jQuery === undefined) {
         }
 
         if (IsNullOrUndefined(name) || IsNullOrUndefined(svc) || IsNullOrUndefined(type) || type.IsNullOrEmpty() || name.IsNullOrEmpty() || !a.Helpers.IsFunc(svc))
-            throw "AddService: name, type and svc must be strings and a function respectively";
+            throw ("AddService: name, type and svc must be strings and a function respectively");
         if (a.Services[name] !== undefined)
-            throw "AddService: service '" + name + "' already exists";
+            throw ("AddService: service '" + name + "' already exists");
 
         a.Services[name] = { Name: name, Dependencies: deps, Service: svc, Type: type };
     }
@@ -835,7 +911,7 @@ if (jQuery === undefined) {
 
         var svc = a.Services[svcName];
         if (a.Helpers.IsUndefinedOrNull(svc))
-            throw "Cannot find service '" + svcName + "'";
+            throw ("Cannot find service '" + svcName + "'");
 
         // try static
         if (svc.Type === "Static" && a.StaticServices[svcName] !== undefined)
@@ -896,9 +972,9 @@ if (jQuery === undefined) {
         }
 
         if (IsNullOrUndefined(name) || IsNullOrUndefined(type) || name.IsNullOrEmpty() || type.IsNullOrEmpty() || !a.Helpers.IsFunc(dep))
-            throw "AddDependency: name and type must be a string and dep must be a function";
+            throw ("AddDependency: name and type must be a string and dep must be a function");
         if (a.Dependencies[name] !== undefined)
-            throw "AddDependency: dependency '" + name + "' already exists";
+            throw ("AddDependency: dependency '" + name + "' already exists");
 
         a.Dependencies[name] = { Name: name, Dependency: dep, Dependencies: deps, Type: type };
     }
@@ -907,7 +983,7 @@ if (jQuery === undefined) {
     a.GetDependency = function (dep) {
         var output = a.Dependencies[dep];
         if (IsNullOrUndefined(output))
-            throw "GetDependency: '' is not a dependency";
+            throw ("GetDependency: '' is not a dependency");
 
         // check static
         if (output.Type === "Static" && a.StaticDependencies[name] !== undefined) {

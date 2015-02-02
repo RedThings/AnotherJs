@@ -13,7 +13,7 @@
 
 // declare another literal
 if (window.Another === undefined) {
-    throw "Another.Routing requires Another";
+    throw new Error("Another.Routing requires Another");
 }
 
 // closure
@@ -37,13 +37,13 @@ if (window.Another === undefined) {
 
                     // checks
                     if (a.Helpers.StringIsNullOrEmpty(name))
-                        throw "RouteBuilder: name cannot be null or empty";
+                        throw new Error("RouteBuilder: name cannot be null or empty");
                     if (a.Helpers.StringIsNullOrEmpty(route))
-                        throw "RouteBuilder: route cannot be null or empty";
+                        throw new Error("RouteBuilder: route cannot be null or empty");
                     if (a.Helpers.IsUndefinedOrNull(defaults))
-                        throw "RouteBuilder: route cannot be null or empty";
-                    if (a.Helpers.Any(ts.Routes, function(r) { return r.Name === name; }))
-                        throw "RouteBuilder: there is already a route named " + name;
+                        throw new Error("RouteBuilder: route cannot be null or empty");
+                    if (a.Helpers.Any(ts.Routes, function (r) { return r.Name === name; }))
+                        throw ("RouteBuilder: there is already a route named " + name);
                     if (a.Helpers.EndsWith(route, "/"))
                         route = a.Helpers.StripLast(route);
                     if (Another.Helpers.StartsWith(route, "/"))
@@ -56,7 +56,7 @@ if (window.Another === undefined) {
                     // add
                     ts.Routes.push({ Name: name, Route: route, Chunks: route.split("/"), Defaults: defaults });
 
-               }
+                }
 
                 return ts;
             }
@@ -67,7 +67,7 @@ if (window.Another === undefined) {
                 if (container.length > 0) {
 
                     if (ts.Controllers[name] !== undefined)
-                        throw "RouteBuilder: controller " + name + " already exists";
+                        throw new Error(("RouteBuilder: controller " + name + " already exists"));
                     ts.Controllers[name] = new func();
 
                 }
@@ -120,7 +120,7 @@ if (window.Another === undefined) {
                     // add search?
                     if (!a.Helpers.StringIsNullOrEmpty(a.Route.QueryString)) {
                         var qSplit = a.Route.QueryString.split("&");
-                        qSplit.forEach(function(str) {
+                        qSplit.forEach(function (str) {
                             var strSplit = str.split("=");
                             a.Route.Search[strSplit[0]] = strSplit[1];
                         });
@@ -278,42 +278,33 @@ if (window.Another === undefined) {
                     // find
                     var found = ts.Views[view];
 
-                    try {
-                        if (found) {
-                            container.html(found);
-                            a.InitializePresenter(presenter, a.Route.Chunks.splice(2));
-                            a.Route.Presenter = presenter;
-                            a.Route.View = view;
-                            a.RaiseEvent("OnRouteChangeSuccess", { Route: a.Route });
-                        } else {
 
-                            // load view
-                            a
-                                .DomHelper
-                                .get(view)
-                                .success(function(txt) {
+                    if (found) {
+                        container.html(found);
+                        a.InitializePresenter(presenter,container, a.Route.Chunks.splice(2));
+                        a.Route.Presenter = presenter;
+                        a.Route.View = view;
+                        a.RaiseEvent("OnRouteChangeSuccess", { Route: a.Route });
+                    } else {
 
-                                    try {
+                        // load view
+                        a
+                            .DomHelper
+                            .get(view)
+                            .success(function (txt) {
 
-                                        if (cacheViews)
-                                            ts.Views[view] = txt;
-                                        container.html(txt);
-                                        a.InitializePresenter(presenter, a.Route.Chunks.splice(2));
-                                        a.Route.Presenter = presenter;
-                                        a.Route.View = view;
-                                        a.RaiseEvent("OnRouteChangeSuccess", { Route: a.Route, View: view, Presenter: presenter });
-
-                                    } catch (ee) {
-                                        a.RaiseEvent("OnRouteNotFound", { Route: a.Route, Error: ee, Message: ee });
-                                    }
-                                })
-                                .error(function(ee) {
-                                    a.RaiseEvent("OnRouteNotFound", { Route: a.Route, Error: ee, Message: "Could not load view " + view });
-                                });
-                        };
-                    } catch (e) {
-                        a.RaiseEvent("OnRouteNotFound", { Route: a.Route, Error: e, Message: e });
-                    }
+                                if (cacheViews)
+                                    ts.Views[view] = txt;
+                                container.html(txt);
+                                a.InitializePresenter(presenter, container, a.Route.Chunks.splice(2));
+                                a.Route.Presenter = presenter;
+                                a.Route.View = view;
+                                a.RaiseEvent("OnRouteChangeSuccess", { Route: a.Route, View: view, Presenter: presenter });
+                            })
+                            .error(function (ee) {
+                                throw new Error("Could not load view " + view);
+                            });
+                    };
 
                 }
             }

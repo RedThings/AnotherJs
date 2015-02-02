@@ -8,8 +8,8 @@
         presenter.Model.SearchTerm = "";
 
         // get menu elements
-        var menuButton = presenter.DomHelper("#menu_button");
-        var menu = presenter.DomHelper("#menu");
+        var menuButton = presenter.Element("#menu_button");
+        var menu = presenter.Element("#menu");
 
         // bind button
         menuButton.click(function (e) {
@@ -32,7 +32,7 @@
         var svc = presenter.GetService("FormService");
         svc.GetData();
 
-        
+        presenter.WhenClicked("#search_box");
 
     }
 

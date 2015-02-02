@@ -18,14 +18,27 @@ var mainApp = Another.CreateApplication("Main");
 
     app.Configure(function () {
 
-        // subscribe
-        app.SubscribeToEvent("OnRouteNotFound", function (e) {
-            alert("Page not found");
-            console.log(e);
+        // on error
+        app.OnError(function (err) {
+            var outputStr = Another.Helpers.FormatString(
+                "Error at line {0}, col {1} of {2} - '{3}' ",
+                [err.lineNumber, err.columnNumber, err.fileName, err.message]);
+            console.log(outputStr);
+            console.log(err);
+
         });
+
+        // add element
+        Another.AnotherPresenter.prototype.WhenClicked = function (selector) {
+
+                var el = this.Element(selector);
+                el.click(function(e) {
+                    e.preventDefault();
+                    alert("You clicked me");
+                });
         
-        var d = app.GetDependency("TestDep");
-        //d.Funk();
+
+        };
 
         // configure routing
         app.ConfigureRoutes("section#main", function (builder) {
@@ -54,7 +67,7 @@ var mainApp = Another.CreateApplication("Main");
 
                     this.Index = function () {
 
-                       return builder.View("/Views/Home/Index.html", "Home");
+                        return builder.View("/Views/Home/Index.html", "Home");
 
                     };
 
@@ -67,9 +80,9 @@ var mainApp = Another.CreateApplication("Main");
                 })
                 .AddRoutingController("Person", function () {
 
-                    this.Index = function() {
+                    this.Index = function () {
 
-                        return builder.View("/Views/Person/Index.html","PersonIndex");
+                        return builder.View("/Views/Person/Index.html", "PersonIndex");
 
                     }
 
@@ -99,11 +112,11 @@ var mainApp = Another.CreateApplication("Main");
 
     app.Run(function () {
 
-        app.InitializePresenter("Layout", function (p) {
+        //app.InitializePresenter("Layout", "#header_main", function (p) {
 
             // can do stuff here.
 
-        });
+        //});
 
     });
 
