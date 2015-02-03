@@ -29,6 +29,7 @@ if (window.Another === undefined) {
             // this
             var ts = this;
             var container = a.DomHelper(selector);
+            //if (container.length < 1) container = a.DomHelper("<div />");
 
             // map route
             this.MapRoute = function (name, route, defaults) {

@@ -42,7 +42,7 @@ Another.Initialize();
 
         var done = ass.async();
         var p;
-        setTimeout(function() {
+        setTimeout(function () {
             p = app.InitializePresenter("PersonIndex", "#test_el1", [1, 2, 3]);
             ass.ok(p.Model.SubDepts === undefined || p.Model.SubDepts.length < 1, "No sub depts");
             p.Model.DeptId = 2;
@@ -69,11 +69,11 @@ Another.Initialize();
             done4();
         }, 400);
 
-        
-        
-        
-       
-        
+
+
+
+
+
     });
     QUnit.test("Test dependency has been mocked. (Testing the test)", function (ass) {
         var dep = app.GetDependency("TestDep");
@@ -83,17 +83,69 @@ Another.Initialize();
 
         var x;
         var done = ass.async();
-        app.CreatePresenter("Test", function(p) {
+        app.CreatePresenter("Test", function (p) {
             p.Model.Test = undefined;
             x = p.BindElements("Test", ["kkokopkok", "posfdpokfsdpokf", "psopsdijfsijdf"]);
         });
-        app.InitializePresenter("Test", "#test_el1", [], function(p) {
+        app.InitializePresenter("Test", "#test_el1", [], function (p) {
 
             ass.ok(x.length > 0, "Dom-less element exists");
             done();
 
         });
+
+
+    });
+    QUnit.test("Test deep clone and custom array (push only)", function (ass) {
+
+        // setup
+        var done1 = ass.async();
+        var done2 = ass.async();
         
+        var test1 = false;
+        var test2 = false;
+        
+        // create presenter
+        app.CreatePresenter("Test2", function (p) {
+
+            // set initial vals
+            p.Model.Level1Array = ["test", "test2", "test3"];
+            p.Model.Level1Bucket = {
+                Inner: {
+                    Level2Array: []
+                }
+            };
+
+            // bind
+            p.Bind("Level1Array", function () {
+                test1 = true;
+            });
+            p.ObserveInnerObject("Level1Bucket.Inner");
+            p.Bind("Level1Bucket.Inner.Level2Array", function () {
+                test2 = true;
+            });
+
+
+        });
+
+        // change
+        var prsnt = app.InitializePresenter("Test2");
+        prsnt.Model.Level1Bucket.Inner.Level2Array.push("test1");
+        prsnt.Model.Level1Array.push("test4");
+        prsnt.Model.Level1Array.push("test5");
+        prsnt.Model.Level1Array.push("test6");
+
+
+        // test
+        setTimeout(function() {
+            ass.ok(test1, "Push to level 1");
+            done1();
+        },100);
+        setTimeout(function () {
+            ass.ok(test2, "Push to level 2");
+            done2();
+        },200);
+
 
     });
 

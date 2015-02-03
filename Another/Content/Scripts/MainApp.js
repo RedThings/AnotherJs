@@ -31,12 +31,12 @@ var mainApp = Another.CreateApplication("Main");
         // add element
         Another.AnotherPresenter.prototype.WhenClicked = function (selector) {
 
-                var el = this.Element(selector);
-                el.click(function(e) {
-                    e.preventDefault();
-                    alert("You clicked me");
-                });
-        
+            var el = this.Element(selector);
+            el.click(function (e) {
+                e.preventDefault();
+                alert("You clicked me");
+            });
+
 
         };
 
@@ -112,11 +112,29 @@ var mainApp = Another.CreateApplication("Main");
 
     app.Run(function () {
 
-        //app.InitializePresenter("Layout", "#header_main", function (p) {
+        app.InitializePresenter("Layout", "#header_main", function (p) {
 
             // can do stuff here.
+            setTimeout(function () {
+                p.Model.Bucket.Inner.RepeaterData = ["test0"];
+            }, 20);
+            setTimeout(function () {
 
-        //});
+                p.Model.Bucket.Inner.RepeaterData.push("test1");
+
+            }, 40);
+            setTimeout(function () {
+
+                p.Model.Bucket.Inner.RepeaterData.push("test2");
+
+            }, 60);
+            setTimeout(function () {
+
+                p.Model.Bucket.Inner.RepeaterData.push("test3");
+
+            }, 80);
+
+        });
 
     });
 

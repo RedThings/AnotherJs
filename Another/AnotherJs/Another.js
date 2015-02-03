@@ -126,6 +126,231 @@ if (jQuery === undefined) {
         throw new Error("Another currently uses jQuery v2.x as a dom helper");
     }
 
+    // observable array
+    // Adapted from http://www.bennadel.com/blog/2292-extending-javascript-arrays-while-keeping-native-bracket-notation-functionality.htm
+    // Define the collection class.
+    a.ObservableArray = (function () {
+
+
+        // I am the constructor function.
+        // ReSharper disable once InconsistentNaming
+        function ObservableArray() {
+
+            // When creating the collection, we are going to work off
+            // the core array. In order to maintain all of the native
+            // array features, we need to build off a native array.
+            var collection = Object.create(Array.prototype);
+
+            // Initialize the array. This line is more complicated than
+            // it needs to be, but I'm trying to keep the approach
+            // generic for learning purposes.
+            collection = (Array.apply(collection, arguments) || collection);
+
+            // Add all the class methods to the collection.
+            ObservableArray.injectClassMethods(collection);
+
+            // Return the new collection object.
+            return (collection);
+
+        }
+
+
+        // ------------------------------------------------------ //
+        // ------------------------------------------------------ //
+
+
+        // Define the static methods.
+        ObservableArray.injectClassMethods = function (collection) {
+
+            // Loop over all the prototype methods and add them
+            // to the new collection.
+            for (var method in ObservableArray.prototype) {
+
+                // Make sure this is a local method.
+                if (ObservableArray.prototype.hasOwnProperty(method)) {
+
+                    // Add the method to the collection.
+                    collection[method] = ObservableArray.prototype[method];
+
+                }
+
+            }
+
+            // Return the updated collection.
+            return (collection);
+
+        };
+
+
+        // I create a new collection from the given array.
+        ObservableArray.fromArray = function (array) {
+
+            // Create a new collection.
+            var collection = ObservableArray.apply(null, array);
+
+            // Return the new collection.
+            return (collection);
+
+        };
+
+
+        // I determine if the given object is an array.
+        ObservableArray.isArray = function (value) {
+
+            // Get it's stringified version.
+            var stringValue = Object.prototype.toString.call(value);
+
+            // Check to see if the string represtnation denotes array.
+            return (stringValue.toLowerCase() === "[object array]");
+
+        };
+
+
+        // ------------------------------------------------------ //
+        // ------------------------------------------------------ //
+
+
+        // Define the class methods.
+        ObservableArray.prototype = {
+
+            // I add the given item to the collection. If the given item
+            // is an array, then each item within the array is added
+            // individually.
+            add: function (value) {
+
+                // Check to see if the item is an array.
+                if (ObservableArray.isArray(value)) {
+
+                    // Add each item in the array.
+                    for (var i = 0 ; i < value.length ; i++) {
+
+                        // Add the sub-item using default push() method.
+                        Array.prototype.push.call(this, value[i]);
+
+                    }
+
+                } else {
+
+                    // Use the default push() method.
+                    Array.prototype.push.call(this, value);
+
+                }
+
+                // Return this object reference for method chaining.
+                return (this);
+
+            },
+
+
+            // I add all the given items to the collection.
+            addAll: function () {
+
+                // Loop over all the arguments to add them to the
+                // collection individually.
+                for (var i = 0 ; i < arguments.length ; i++) {
+
+                    // Add the given value.
+                    this.add(arguments[i]);
+
+                }
+
+                // Return this object reference for method chaining.
+                return (this);
+
+            },
+
+            // push no fire
+            pushNoFire: function (value) {
+                var output = Array.prototype.push.call(this, value);
+                return output;
+            },
+
+            // push
+            push: function (value) {
+                var output = Array.prototype.push.call(this, value);
+                this.fireChange();
+                return output;
+            },
+
+            // pop
+            pop: function () {
+                var output = Array.prototype.pop.call(this);
+                this.fireChange();
+                return output;
+            },
+
+            // reverse
+            reverse: function () {
+                var output = Array.prototype.reverse.call(this);
+                this.fireChange();
+                return output;
+            },
+
+            // slice
+            slice: function (start, end) {
+                var output = Array.prototype.slice.call(this, start, end);
+                this.fireChange();
+                return output;
+            },
+
+            // splice
+            splice: function (aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) {
+                var output = Array.prototype.splice.call(this, aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
+                this.fireChange();
+                return output;
+            },
+
+            // sort
+            sort: function () {
+                var output = Array.prototype.sort.call(this);
+                this.fireChange();
+                return output;
+            },
+
+            shift: function () {
+                var output = Array.prototype.shift.call(this);
+                this.fireChange();
+                return output;
+            },
+            unshift: function (aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) {
+                var output = Array.prototype.unshift.call(this, aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
+                this.fireChange();
+                return output;
+            },
+
+            // toString
+            toString: function () {
+                return "Another.ObservableArray";
+            },
+
+            // set observables
+            setObservables: function (parentObj, childObjName) {
+                this.parentObj = parentObj;
+                this.childObjName = childObjName;
+            },
+
+            // fire change
+            fireChange: function () {
+                this.parentObj[this.childObjName] = a.Helpers.Clone(this);
+                delete this;
+            }
+
+
+        };
+
+
+        // ------------------------------------------------------ //
+        // ------------------------------------------------------ //
+        // ------------------------------------------------------ //
+        // ------------------------------------------------------ //
+
+
+        // Return the collection constructor.
+        return (ObservableArray);
+
+
+    }).call({});
+
     // dom helper
     a.DomHelper = jQuery;
 
@@ -159,14 +384,18 @@ if (jQuery === undefined) {
         var _observables = [];
 
         // on observe
-        function doOnObserve(newVals) {
+        function doOnObserve(newVals, context, subName) {
 
+            // check
+            if (IsNullOrUndefined(subName)) subName = "";
+
+            // loop and look for changes
             newVals.forEach(function (newVal) {
 
-                // find corresponding
                 var found = _observables.filter(function (obs) {
-                    return obs.PropName === newVal.name;
+                    return obs.PropName === subName + newVal.name;
                 });
+
 
                 // check
                 if (found.length > 0) {
@@ -176,34 +405,43 @@ if (jQuery === undefined) {
                         var theValue = newVal.object[newVal.name];
 
                         // check
-                        if (fnd.Elements !== undefined && fnd.Elements !== null && fnd.Elements.length > 0) {
+                        if (shouldBeObservable(theValue)) {
+                            var conv = convertToObservable(theValue, context, newVal.name);
+                            context[newVal.name] = conv;
+                        } else {
 
-                            fnd.Elements.forEach(function (el) {
+                            // check
+                            if (fnd.Elements !== undefined && fnd.Elements !== null && fnd.Elements.length > 0) {
 
-                                if (el.length > 0) {
+                                fnd.Elements.forEach(function (el) {
 
-                                    // switch type
-                                    switch (el[0].tagName) {
+                                    if (el.length > 0) {
 
-                                        case "INPUT":
-                                        case "TEXTAREA":
-                                            {
-                                                doTextInputOrElementChange(el, model, newVal, theValue);
-                                                break;
-                                            }
-                                        default:
-                                            el.html(theValue);
+                                        // switch type
+                                        switch (el[0].tagName) {
+
+                                            case "INPUT":
+                                            case "TEXTAREA":
+                                                {
+                                                    doTextInputOrElementChange(el, context, newVal, theValue);
+                                                    break;
+                                                }
+                                            default:
+                                                el.html(theValue);
+                                        }
+
+
                                     }
+                                });
 
+                            }
 
-                                }
-                            });
+                            if (a.Helpers.IsFunc(fnd.Callback)) {
+                                fnd.Callback(theValue, context);
+                            }
 
                         }
 
-                        if (fnd.Callback !== undefined && fnd.Callback !== null && typeof fnd.Callback === "function") {
-                            fnd.Callback(theValue, model);
-                        }
                     });
                 };
 
@@ -293,7 +531,7 @@ if (jQuery === undefined) {
 
             // check
             if (typeof opts.data === "string") {
-                
+
                 // bind
                 ts.Bind(opts.data, function (newVal) {
 
@@ -305,16 +543,16 @@ if (jQuery === undefined) {
                 return ts.Element(opts.selector);
 
             } else {
-                
+
                 // el
                 var el = ts.Element(opts.selector);
 
                 // check
                 if (el.parent().length <= 0) {
-                    
+
                     var prnt = domHelper("<div />");
                     prnt.append(el);
-                    
+
                 }
 
                 // parent
@@ -562,7 +800,7 @@ if (jQuery === undefined) {
 
                         // bind change
                         el.data("changed_bound", true);
-                        el.bind("change", function(e) {
+                        el.bind("change", function (e) {
 
                             // denote coming from element event
                             el.data("change_from_element", true);
@@ -665,12 +903,61 @@ if (jQuery === undefined) {
         // set observer
         this.SetObserve = function () {
 
+            // check and change array
+            checkAndChangeArrays(ts.Model);
+
             // set
-            Object.observe(model, function (newVal) {
-                doOnObserve(newVal);
+            Object.observe(ts.Model, function (newVals) {
+
+                doOnObserve(newVals, ts.Model);
+
             });
 
             return ts;
+        }
+
+        var shouldBeObservable = function(obj) {
+           return a.Helpers.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
+        }
+
+        var convertToObservable = function(theValue, parentObj, childObjName) {
+            var oArray = new a.ObservableArray();
+            oArray.setObservables(parentObj, childObjName);
+            theValue.forEach(function (v) {
+                oArray.pushNoFire(v);
+            });
+            return oArray;
+        }
+
+        var checkAndChangeArrays=function(obj) {
+            
+            for (var ooo in obj) {
+                var innerObj = obj[ooo];
+                if (shouldBeObservable(innerObj)) {
+                    obj[ooo] = convertToObservable(obj[ooo], obj, ooo);
+                }
+            }
+        }
+
+        // observer inner
+        this.ObserveInnerObject = function (theName) {
+
+            // do via eval str
+            var outputString = "Object.observe(";
+            var modelString = "ts.Model";
+            var splt = theName.split(".");
+            var joinStr = splt.join(".") + ".";
+            for (var i = 0; i < splt.length; i++) {
+                modelString += "['" + splt[i] + "']";
+            }
+            outputString = "checkAndChangeArrays(" + modelString + "); " + outputString;
+            outputString += modelString + ", function (newVals) {";
+            outputString += "doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
+            outputString += "});";
+            eval(outputString);
+
+            return ts;
+
         }
 
         // get service
@@ -803,8 +1090,11 @@ if (jQuery === undefined) {
             callback = arrayOfParams;
             arrayOfParams = undefined;
         }
-        if (typeof container === "string")
+        if (typeof container === "string") {
             container = a.DomHelper(container);
+        }
+        if (IsNullOrUndefined(container) || container.length < 1) container = a.DomHelper("<div />");
+
 
         // 
         a.RaiseEvent("OnBeginPresenterInitializing", name);

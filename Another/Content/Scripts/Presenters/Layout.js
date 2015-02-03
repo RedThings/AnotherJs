@@ -34,6 +34,17 @@
 
         presenter.WhenClicked("#search_box");
 
+        presenter.BindRepeater({
+            selector: "#repeater_data",
+            onRowBinding: function (el, rw) {
+                el.html(rw);
+            },
+            data: "Bucket.Inner.RepeaterData"
+
+        });
+        presenter.Model.Bucket = { Inner: {} };
+        presenter.ObserveInnerObject("Bucket.Inner");
+
     }
 
     app.CreatePresenter("Layout", layoutPresenter);
