@@ -116,21 +116,21 @@ var mainApp = Another.CreateApplication("Main");
 
             // can do stuff here.
             setTimeout(function () {
-                p.Model.Bucket.Inner.RepeaterData = ["test0"];
+                p.Model.Bucket.Inner.RepeaterData = ["Bucket.Inner.RepeaterData - test0"];
             }, 20);
             setTimeout(function () {
 
-                p.Model.Bucket.Inner.RepeaterData.push("test1");
+                p.Model.Bucket.Inner.RepeaterData.push("Bucket.Inner.RepeaterData - test1");
 
             }, 40);
             setTimeout(function () {
 
-                p.Model.Bucket.Inner.RepeaterData.push("test2");
+                p.Model.Bucket.Inner.RepeaterData.push("Bucket.Inner.RepeaterData - test2");
 
             }, 60);
             setTimeout(function () {
 
-                p.Model.Bucket.Inner.RepeaterData.push("test3");
+                p.Model.Bucket.Inner.RepeaterData.push("Bucket.Inner.RepeaterData - test3");
 
             }, 80);
 

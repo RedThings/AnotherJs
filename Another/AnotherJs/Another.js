@@ -126,6 +126,74 @@ if (jQuery === undefined) {
         throw new Error("Another currently uses jQuery v2.x as a dom helper");
     }
 
+    /* obs / presenter helpers */
+    // check and fire
+    var checkAndFireFromObservable = function (context, fnd, newValName, theValue) {
+
+        // check
+        if (fnd.Elements !== undefined && fnd.Elements !== null && fnd.Elements.length > 0) {
+
+            fnd.Elements.forEach(function (el) {
+
+                if (el.length > 0) {
+
+                    // switch type
+                    switch (el[0].tagName) {
+
+                        case "INPUT":
+                        case "TEXTAREA":
+                            {
+                                doTextInputOrElementChange(el, context, newValName, theValue);
+                                break;
+                            }
+                        default:
+                            el.html(theValue);
+                    }
+
+
+                }
+            });
+
+        }
+
+        if (a.Helpers.IsFunc(fnd.Callback)) {
+            fnd.Callback(theValue, context);
+        }
+
+    }
+
+    // do text input or element change change
+    var doTextInputOrElementChange = function (el, context, newValName, theValue) {
+
+        if (el.data("an_change") === undefined) {
+
+            el.data("an_change", true);
+
+            el.bind("keyup", function (e) {
+                el.data("change_from_element", true);
+                context[newValName] = el.val();
+            });
+
+        }
+
+        if (el.data("change_from_element") === true) {
+            el.data("change_from_element", false);
+        } else {
+            el.val(theValue);
+        }
+    }
+
+    // get observable
+    var getObservable = function (obs, name) {
+
+        var found = obs.filter(function (o) {
+            return o.PropName === name;
+        });
+
+        return found;
+
+    }
+
     // observable array
     // Adapted from http://www.bennadel.com/blog/2292-extending-javascript-arrays-while-keeping-native-bracket-notation-functionality.htm
     // Define the collection class.
@@ -324,15 +392,32 @@ if (jQuery === undefined) {
             },
 
             // set observables
-            setObservables: function (parentObj, childObjName) {
+            setObservables: function (parentObj, childObjName, theObservables, fullName) {
                 this.parentObj = parentObj;
                 this.childObjName = childObjName;
+                this.observables = theObservables;
+                this.fullName = fullName;
             },
 
             // fire change
             fireChange: function () {
-                this.parentObj[this.childObjName] = a.Helpers.Clone(this);
-                delete this;
+
+                // self
+                var self = this;
+                var theValue = self;
+
+                // find in observables
+                var found = getObservable(this.observables, this.fullName);
+
+                // check
+                if (found.length > 0) {
+                    found.forEach(function (f) {
+
+                        checkAndFireFromObservable(self.parentObj, f, self.childObjName, theValue);
+
+                    });
+                }
+
             }
 
 
@@ -392,10 +477,8 @@ if (jQuery === undefined) {
             // loop and look for changes
             newVals.forEach(function (newVal) {
 
-                var found = _observables.filter(function (obs) {
-                    return obs.PropName === subName + newVal.name;
-                });
-
+                // get found
+                var found = getObservable(_observables, subName + newVal.name);
 
                 // check
                 if (found.length > 0) {
@@ -406,39 +489,11 @@ if (jQuery === undefined) {
 
                         // check
                         if (shouldBeObservable(theValue)) {
-                            var conv = convertToObservable(theValue, context, newVal.name);
+                            var conv = convertToObservable(theValue, context, newVal.name, _observables, subName + newVal.name);
                             context[newVal.name] = conv;
                         } else {
 
-                            // check
-                            if (fnd.Elements !== undefined && fnd.Elements !== null && fnd.Elements.length > 0) {
-
-                                fnd.Elements.forEach(function (el) {
-
-                                    if (el.length > 0) {
-
-                                        // switch type
-                                        switch (el[0].tagName) {
-
-                                            case "INPUT":
-                                            case "TEXTAREA":
-                                                {
-                                                    doTextInputOrElementChange(el, context, newVal, theValue);
-                                                    break;
-                                                }
-                                            default:
-                                                el.html(theValue);
-                                        }
-
-
-                                    }
-                                });
-
-                            }
-
-                            if (a.Helpers.IsFunc(fnd.Callback)) {
-                                fnd.Callback(theValue, context);
-                            }
+                            checkAndFireFromObservable(context, fnd, newVal.name, theValue);
 
                         }
 
@@ -449,24 +504,34 @@ if (jQuery === undefined) {
 
         };
 
-        // do text input or element change change
-        var doTextInputOrElementChange = function (el, mdel, newVal, theValue) {
+        // should be observable
+        var shouldBeObservable = function (obj) {
+            return a.Helpers.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
+        }
 
-            if (el.data("an_change") === undefined) {
+        // convert to observable
+        var convertToObservable = function (theValue, parentObj, childObjName, theObservables, fullName) {
+            if (IsNullOrUndefined(fullName) || fullName.IsNullOrEmpty())
+                throw new Error("ConverToObservable final parameter is full graph name preceding the property name eg 'Level1.Leve2.'");
+            var oArray = new a.ObservableArray();
+            oArray.setObservables(parentObj, childObjName, theObservables, fullName);
+            theValue.forEach(function (v) {
+                oArray.pushNoFire(v);
+            });
+            return oArray;
+        }
 
-                el.data("an_change", true);
+        // check and change at top level
+        var checkAndChangeArrays = function (obj, preName) {
 
-                el.bind("keyup", function (e) {
-                    el.data("change_from_element", true);
-                    mdel[newVal.name] = el.val();
-                });
+            if (IsNullOrUndefined(preName))
+                preName = "";
 
-            }
-
-            if (el.data("change_from_element") === true) {
-                el.data("change_from_element", false);
-            } else {
-                el.val(theValue);
+            for (var ooo in obj) {
+                var innerObj = obj[ooo];
+                if (shouldBeObservable(innerObj)) {
+                    obj[ooo] = convertToObservable(obj[ooo], obj, ooo, _observables,  preName + ooo);
+                }
             }
         }
 
@@ -916,29 +981,6 @@ if (jQuery === undefined) {
             return ts;
         }
 
-        var shouldBeObservable = function(obj) {
-           return a.Helpers.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
-        }
-
-        var convertToObservable = function(theValue, parentObj, childObjName) {
-            var oArray = new a.ObservableArray();
-            oArray.setObservables(parentObj, childObjName);
-            theValue.forEach(function (v) {
-                oArray.pushNoFire(v);
-            });
-            return oArray;
-        }
-
-        var checkAndChangeArrays=function(obj) {
-            
-            for (var ooo in obj) {
-                var innerObj = obj[ooo];
-                if (shouldBeObservable(innerObj)) {
-                    obj[ooo] = convertToObservable(obj[ooo], obj, ooo);
-                }
-            }
-        }
-
         // observer inner
         this.ObserveInnerObject = function (theName) {
 
@@ -950,7 +992,7 @@ if (jQuery === undefined) {
             for (var i = 0; i < splt.length; i++) {
                 modelString += "['" + splt[i] + "']";
             }
-            outputString = "checkAndChangeArrays(" + modelString + "); " + outputString;
+            outputString = "checkAndChangeArrays(" + modelString + ",'"+joinStr+"'); " + outputString;
             outputString += modelString + ", function (newVals) {";
             outputString += "doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
             outputString += "});";
@@ -1389,8 +1431,6 @@ if (jQuery === undefined) {
 
 
 })(Another);
-
-
 
 
 

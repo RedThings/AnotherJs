@@ -123,7 +123,10 @@ Another.Initialize();
             p.ObserveInnerObject("Level1Bucket.Inner");
             p.Bind("Level1Bucket.Inner.Level2Array", function () {
                 test2 = true;
+                console.log(prsnt.Model.Level1Bucket.Inner.Level2Array);
+                console.log(prsnt.Model.Level1Bucket.Inner.Level2Array.toString());
             });
+
 
 
         });
@@ -131,6 +134,8 @@ Another.Initialize();
         // change
         var prsnt = app.InitializePresenter("Test2");
         prsnt.Model.Level1Bucket.Inner.Level2Array.push("test1");
+        prsnt.Model.Level1Bucket.Inner.Level2Array.push("test2");
+        prsnt.Model.Level1Bucket.Inner.Level2Array.push("test3");
         prsnt.Model.Level1Array.push("test4");
         prsnt.Model.Level1Array.push("test5");
         prsnt.Model.Level1Array.push("test6");
@@ -144,6 +149,7 @@ Another.Initialize();
         setTimeout(function () {
             ass.ok(test2, "Push to level 2");
             done2();
+            
         },200);
 
 
