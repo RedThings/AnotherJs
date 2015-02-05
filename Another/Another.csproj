@@ -59,9 +59,22 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="AnotherJs\Another.min.js">
+      <DependentUpon>Another.js</DependentUpon>
+    </Content>
+    <Content Include="AnotherJs\Another.Routing.min.js">
+      <DependentUpon>Another.Routing.js</DependentUpon>
+    </Content>
+    <Content Include="Content\Images\scary1.png" />
     <Content Include="Content\Scripts\Presenters\Others.js" />
     <Content Include="Content\Scripts\Presenters\Person.js" />
     <Content Include="Json\test.json" />
+    <Content Include="AnotherJs\Another.min.js.map">
+      <DependentUpon>Another.min.js</DependentUpon>
+    </Content>
+    <Content Include="AnotherJs\Another.Routing.min.js.map">
+      <DependentUpon>Another.Routing.min.js</DependentUpon>
+    </Content>
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

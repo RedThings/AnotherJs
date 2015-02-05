@@ -79,6 +79,33 @@
         })
         .CreatePresenter("About", function (p) {
 
+            // set model state
+            p.Model.ShowImages = false;
+            p.Model.EnableButton = true;
+
+            // set events
+            p.Element("#btnShowHide").click(function (e) {
+                e.preventDefault();
+                p.Model.ShowImages = !p.Model.ShowImages;
+            });
+            p.Element("#btnDisable").click(function (e) {
+                e.preventDefault();
+                p.Model.EnableButton = !p.Model.EnableButton;
+            });
+
+            // set conditionals
+            p.ShowWhen(["#firstImage", "[data-showhide]"], function () {
+                return p.Model.ShowImages;
+            });
+            p.EnableWhen(["#btnShowHide"], function () {
+                return p.Model.EnableButton === true;
+            });
+
+            // set bindings
+            p.Bind("ShowImages", function (res) {
+                console.log("Show Images ", res);
+            });
+
         });
 
 

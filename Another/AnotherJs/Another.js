@@ -386,7 +386,7 @@ if (jQuery === undefined) {
             },
 
             // splice
-            splice: function (strt,lngth) {
+            splice: function (strt, lngth) {
                 var args = arguments;
                 Array.prototype.splice.call(this, strt, lngth);
                 var countr = 2;
@@ -588,8 +588,8 @@ if (jQuery === undefined) {
         };
 
         // unshift
-        this.AddElementsInFront = function(args) {
-            
+        this.AddElementsInFront = function (args) {
+
             // find el to put before
             var childrn = ts.prnt.children();
             var elBefore = ts.prsnt.DomHelper(childrn.get(0));
@@ -641,7 +641,7 @@ if (jQuery === undefined) {
 
             // find el to put after
             var elBefore = ts.prsnt.DomHelper(childrn.get(indx - 1));
-            
+
             // iterate args
             for (var arg = 2; arg < args.length; ++arg) {
                 var d = args[arg];
@@ -729,6 +729,36 @@ if (jQuery === undefined) {
             });
 
         };
+
+        // conditionals
+        this.RunConditionals=function() {
+
+            ts.PresenterConditionals.forEach(function (obj) {
+
+                // elements
+                var els = [];
+
+                // check
+                if (a.Helpers.IsArray(obj.selector)) {
+                    obj.selector.forEach(function (sl) {
+                        els.push(ts.Container.find(sl));
+                    });
+                }
+                else if (typeof obj.selector === "string") {
+                    els.push(ts.Container.find(obj.selector));
+                }
+
+                // now loop
+                els.forEach(function (el) {
+
+                    var res = obj.boolCallback();
+                    obj.foundCallback(el, res);
+
+                });
+
+            });
+
+        }
 
         // should be observable
         var shouldBeObservable = function (obj) {
@@ -1158,10 +1188,12 @@ if (jQuery === undefined) {
             // set
             Object.observe(ts.Model, function (newVals) {
 
+                ts.RunConditionals();
                 doOnObserve(newVals, ts.Model);
 
             });
 
+            //
             return ts;
         }
 
@@ -1178,13 +1210,16 @@ if (jQuery === undefined) {
             }
             outputString = "checkAndChangeArrays(" + modelString + ",'" + joinStr + "'); " + outputString;
             outputString += modelString + ", function (newVals) {";
-            outputString += "doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
+            outputString += "ts.RunConditionals(); doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
             outputString += "});";
             eval(outputString);
 
             return ts;
 
         }
+
+        // conditionals
+        this.PresenterConditionals = [];
 
         // get service
         this.GetService = function (svcName) {
@@ -1294,6 +1329,36 @@ if (jQuery === undefined) {
         this.GetDependency = function (name) {
             return a.GetDependency(name);
         }
+
+        // conditionals
+        this.AddPresenterConditional = function (name, callback) {
+
+            // check
+            if (a.PresenterConditionals[name] !== undefined) {
+                throw new Error("PresenterConditional '" + name + "' already exists.");
+            }
+
+            // callback
+            a.PresenterConditionals[name] = callback;
+            a.AnotherPresenter.prototype[name] = function (selector, boolCallback) {
+
+                // self
+                var ts1 = this;
+
+               // find
+                var foundCallback = a.PresenterConditionals[name];
+                if (IsNullOrUndefined(foundCallback))
+                    throw new Error("PresenterConditional '" + name + "' does not exist.");
+
+                // add
+                ts1.PresenterConditionals.push({ name: name, selector: selector, boolCallback: boolCallback, foundCallback: foundCallback });
+
+            }
+
+            //
+            return ts;
+        }
+
     }
 
     // applications bucket
@@ -1353,12 +1418,18 @@ if (jQuery === undefined) {
             eval(str);
         }
 
+        // run conditionals
+        presenter.RunConditionals();
 
+        // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);
 
+        // callbacks
         if (a.Helpers.IsFunc(callback)) {
             callback(presenter);
         }
+
+        //
         return presenter;
     }
 
@@ -1543,6 +1614,9 @@ if (jQuery === undefined) {
         }
     }
 
+    // conditionals
+    a.PresenterConditionals = {};
+
     // kick the whole thing off!
     a.Initialize = function (callback) {
 
@@ -1613,6 +1687,40 @@ if (jQuery === undefined) {
 
 
 
+
+    /*
+     * 
+     * 
+     * Another.PresenterConditionalsApp
+     * 
+     * 
+     */
+    a.PresenterConditionalsApp = a.CreateApplication("Another.PresenterConditionalsApp");
+    (function (ac) {
+
+        // show when
+        ac.AddPresenterConditional("ShowWhen", function (el, res) {
+
+            if (res) {
+                el.show();
+            } else {
+                el.hide();
+            }
+
+        });
+
+        // enable when
+        ac.AddPresenterConditional("EnableWhen", function (el, res) {
+            
+            if (res) {
+                el.removeAttr('disabled');
+            } else {
+                el.attr('disabled', 'disabled');
+            }
+
+        });
+
+    })(a.PresenterConditionalsApp);
 
 })(Another);
 
