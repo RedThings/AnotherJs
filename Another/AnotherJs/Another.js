@@ -126,7 +126,17 @@ if (jQuery === undefined) {
         throw new Error("Another currently uses jQuery v2.x as a dom helper");
     }
 
-    /* obs / presenter helpers */
+
+
+
+    /* 
+     * 
+     * 
+     * obs / presenter helpers
+     * 
+     * 
+     * 
+     */
     // check and fire
     var checkAndFireFromObservable = function (context, fnd, newValName, theValue) {
 
@@ -193,6 +203,11 @@ if (jQuery === undefined) {
         return found;
 
     }
+
+
+
+
+
 
     // observable array
     // Adapted from http://www.bennadel.com/blog/2292-extending-javascript-arrays-while-keeping-native-bracket-notation-functionality.htm
@@ -329,61 +344,96 @@ if (jQuery === undefined) {
 
             // push no fire
             pushNoFire: function (value) {
-                var output = Array.prototype.push.call(this, value);
-                return output;
+                Array.prototype.push.call(this, value);
+                return this;
             },
 
             // push
             push: function (value) {
-                var output = Array.prototype.push.call(this, value);
+                Array.prototype.push.call(this, value);
+                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                    rpt.AddNewElement(value);
+                });
                 this.fireChange();
-                return output;
+                return this;
             },
 
             // pop
             pop: function () {
-                var output = Array.prototype.pop.call(this);
+                Array.prototype.pop.call(this);
+                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                    rpt.RemoveLastElement();
+                });
                 this.fireChange();
-                return output;
+                return this;
             },
 
             // reverse
             reverse: function () {
-                var output = Array.prototype.reverse.call(this);
+                Array.prototype.reverse.call(this);
+                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                    rpt.ReverseElements();
+                });
                 this.fireChange();
-                return output;
+                return this;
             },
 
             // slice
             slice: function (start, end) {
                 var output = Array.prototype.slice.call(this, start, end);
-                this.fireChange();
+                //this.fireChange();
                 return output;
             },
 
             // splice
-            splice: function (aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) {
-                var output = Array.prototype.splice.call(this, aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
+            splice: function (strt,lngth) {
+                var args = arguments;
+                Array.prototype.splice.call(this, strt, lngth);
+                var countr = 2;
+                for (countr; countr < args.length; countr++) {
+                    var theVal = args[countr];
+                    Array.prototype.splice.call(this, strt, 0, theVal);
+                    strt++;
+                }
+                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                    if (strt === undefined) {
+                        rpt.RemoveAllElements();
+                    } else {
+                        rpt.SpliceElements(args);
+                    }
+                });
                 this.fireChange();
-                return output;
+                return this;
             },
 
             // sort
             sort: function () {
-                var output = Array.prototype.sort.call(this);
+                throw new Error("Type Another.ObservableArray cannot 'sort'");
+            },
+
+            // shift
+            shift: function () {
+                var output = Array.prototype.shift.call(this);
+                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                    rpt.RemoveFirstElement();
+                });
                 this.fireChange();
                 return output;
             },
 
-            shift: function () {
-                var output = Array.prototype.shift.call(this);
+            // unshift
+            unshift: function () {
+                var args = arguments;
+                var countr = 0;
+                for (countr; countr < args.length; countr++) {
+                    var theVal = args[countr];
+                    Array.prototype.splice.call(this, 0, 0, theVal);
+                }
+                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                    rpt.AddElementsInFront(args);
+                });
                 this.fireChange();
-                return output;
-            },
-            unshift: function (aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z) {
-                var output = Array.prototype.unshift.call(this, aa, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);
-                this.fireChange();
-                return output;
+                return this;
             },
 
             // toString
@@ -418,6 +468,18 @@ if (jQuery === undefined) {
                     });
                 }
 
+            },
+
+            // set repeater
+            setRepeater: function (rpt) {
+                this.repeater = rpt;
+            },
+
+            // check repeater
+            checkRepeater: function (func) {
+                if (!IsNullOrUndefined(this.repeater) && a.Helpers.IsFunc(func)) {
+                    func(this.repeater);
+                }
             }
 
 
@@ -438,6 +500,170 @@ if (jQuery === undefined) {
 
     // dom helper
     a.DomHelper = jQuery;
+
+    // wrappers
+    a.RepeaterWrappers = {};
+
+    // wrapper
+    a.RepeaterWrapper = function (opts, prsnt) {
+
+        // self
+        var ts = this;
+
+        // set "private" methods / props
+        this.opts = opts;
+        this.prsnt = prsnt;
+        this.el = prsnt.Element(opts.selector);
+        this.prnt = this.el.parent();
+        if (this.prnt.length <= 0) {
+            this.prnt = this.prsnt.DomHelper("<div />");
+        }
+        this.cloneText = this.el[0].outerHTML;
+        this.el.remove();
+        this.data = opts.data;
+        if (this.data.toString() !== "Another.ObservableArray")
+            throw new TypeError("RepeaterWrapper.data must be of type Another.ObservableArray");
+        this.data.setRepeater(this);
+
+
+        // element
+        this.Element = function () {
+            return ts.el;
+        };
+
+        // get element
+        this.CreateElement = function () {
+            var newEl = ts.prsnt.DomHelper(ts.cloneText);
+            newEl.removeAttr("id");
+            newEl.children().each(function (i, theEl) {
+                var jTheEl = ts.prsnt.DomHelper(theEl);
+                var theId = jTheEl.attr("id");
+                if (!IsNullOrUndefined(theId) && theId.length > 0) {
+                    jTheEl.attr("id", theId + "_" + a.Helpers.GetRandom(true));
+                }
+            });
+            return newEl;
+        }
+
+        // add new element
+        this.AddNewElement = function (rowVal, override) {
+
+            if (override || this.firstBindingComplete === true) {
+
+                // create new
+                var newEl = ts.CreateElement();
+
+                // append
+                ts.prnt.append(newEl);
+
+                // fire binding
+                ts.opts.onRowBinding(newEl, rowVal);
+
+                // show
+                newEl.show();
+            }
+        }
+
+        // reverse
+        this.ReverseElements = function () {
+            var childrn = ts.prnt.children();
+            for (var i = 0; i < childrn.length; i++) {
+                ts.prnt.prepend(childrn[i]);
+            }
+        }
+
+        // pop
+        this.RemoveLastElement = function () {
+            ts.prnt.children().last().remove();
+        };
+
+        // shift
+        this.RemoveFirstElement = function () {
+            ts.prnt.children().first().remove();
+        };
+
+        // splice()
+        this.RemoveAllElements = function () {
+            ts.prnt.children().remove();
+        };
+
+        // unshift
+        this.AddElementsInFront = function(args) {
+            
+            // find el to put before
+            var childrn = ts.prnt.children();
+            var elBefore = ts.prsnt.DomHelper(childrn.get(0));
+
+            // iterate args
+            for (var arg = 0; arg < args.length; ++arg) {
+                var d = args[arg];
+                var newEl = ts.CreateElement();
+                ts.opts.onRowBinding(newEl, d);
+                newEl.show();
+
+                if (elBefore.length < 1) {
+                    ts.prnt.append(newEl);
+                } else {
+
+                    if (arg === 0) {
+
+                        elBefore.before(newEl);
+                    } else {
+                        elBefore.after(newEl);
+                    }
+
+                }
+                elBefore = newEl;
+            }
+        }
+
+        // splice
+        this.SpliceElements = function (args) {
+
+            // get vars
+            var indx = args[0];
+            var count = args[1];
+            var childrn = ts.prnt.children();
+            var lastIndex = indx + (count - 1);
+
+            // add remove class
+            childrn.each(function (ii, ch) {
+
+                if (ii >= indx && ii <= lastIndex) {
+                    ts.prsnt.DomHelper(ch).addClass("tbm___");
+                }
+
+            });
+
+            // remove
+            var toRemove = ts.prnt.find(".tbm___");
+            toRemove.remove();
+
+            // find el to put after
+            var elBefore = ts.prsnt.DomHelper(childrn.get(indx - 1));
+            
+            // iterate args
+            for (var arg = 2; arg < args.length; ++arg) {
+                var d = args[arg];
+                var newEl = ts.CreateElement();
+                ts.opts.onRowBinding(newEl, d);
+                newEl.show();
+                if (elBefore.length < 1) {
+                    ts.prnt.append(newEl);
+                } else {
+                    elBefore.after(newEl);
+                }
+                elBefore = newEl;
+            }
+        }
+
+        // init
+        this.data.forEach(function (d) {
+            ts.AddNewElement(d, true);
+        });
+        //this.AddElementsInFront(ts.data);
+        this.firstBindingComplete = true;
+    };
 
     // presenter
     a.AnotherPresenter = function (name, model, container) {
@@ -530,7 +756,7 @@ if (jQuery === undefined) {
             for (var ooo in obj) {
                 var innerObj = obj[ooo];
                 if (shouldBeObservable(innerObj)) {
-                    obj[ooo] = convertToObservable(obj[ooo], obj, ooo, _observables,  preName + ooo);
+                    obj[ooo] = convertToObservable(obj[ooo], obj, ooo, _observables, preName + ooo);
                 }
             }
         }
@@ -601,6 +827,8 @@ if (jQuery === undefined) {
                 ts.Bind(opts.data, function (newVal) {
 
                     opts.data = newVal;
+                    if (IsNullOrUndefined(opts.guid) || opts.guid.IsNullOrEmpty())
+                        opts.guid = a.Helpers.GetRandom(true);
                     ts.BindRepeater(opts);
 
                 });
@@ -609,66 +837,22 @@ if (jQuery === undefined) {
 
             } else {
 
-                // el
-                var el = ts.Element(opts.selector);
-
                 // check
-                if (el.parent().length <= 0) {
-
-                    var prnt = domHelper("<div />");
-                    prnt.append(el);
-
+                if (opts.data.toString() !== "Another.ObservableArray") {
+                    throw new Error("Presenter.BindRepeater = options.data must be an array");
                 }
 
-                // parent
-                var parent = el.parent();
-                parent.hide();
+                if (IsNullOrUndefined(opts.guid) || opts.guid.IsNullOrEmpty())
+                    opts.guid = a.Helpers.GetRandom(true);
 
-                // check
-                if (parent.length < 1) throw ("A repeated element must have a parent");
-
-                // clone text
-                var cloneText = el[0].outerHTML;
-
-                // loop parent elements and remove
-                parent.children().each(function (i, childEl) {
-                    childEl.parentNode.removeChild(childEl);
-                });
-                // put back
-                el = domHelper(cloneText);
-                parent.append(el);
-
-                // find element
-                if (el.length > 0 && a.Helpers.IsArray(opts.data)) {
-
-                    // hide el
-                    el.hide();
-
-                    // loop data
-                    var rowCount = 0;
-                    opts.data.forEach(function (row) {
-
-                        var newEl = domHelper(cloneText);
-                        newEl.removeAttr("id");
-                        newEl.children().each(function (i, theEl) {
-                            var jTheEl = domHelper(theEl);
-                            var theId = jTheEl.attr("id");
-                            if (!IsNullOrUndefined(theId) && theId.length > 0) {
-                                jTheEl.attr("id", theId + "[" + rowCount + "]");
-                            }
-                        });
-                        parent.append(newEl);
-                        opts.onRowBinding(newEl, row);
-                        newEl.show();
-                        rowCount++;
-                    });
-
-                    // FINALLY
-                    parent.show();
-
+                // wrapper
+                var wrapper = a.RepeaterWrappers[opts.guid];
+                if (IsNullOrUndefined(wrapper)) {
+                    wrapper = new a.RepeaterWrapper(opts, ts);
+                    a.RepeaterWrappers[opts.guid] = wrapper;
                 }
 
-                return el;
+                return wrapper.Element();
             }
 
         }
@@ -992,7 +1176,7 @@ if (jQuery === undefined) {
             for (var i = 0; i < splt.length; i++) {
                 modelString += "['" + splt[i] + "']";
             }
-            outputString = "checkAndChangeArrays(" + modelString + ",'"+joinStr+"'); " + outputString;
+            outputString = "checkAndChangeArrays(" + modelString + ",'" + joinStr + "'); " + outputString;
             outputString += modelString + ", function (newVals) {";
             outputString += "doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
             outputString += "});";

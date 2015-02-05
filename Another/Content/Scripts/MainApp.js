@@ -66,7 +66,7 @@ var mainApp = Another.CreateApplication("Main");
                 .AddRoutingController("Home", function () {
 
                     this.Index = function () {
-
+                        
                         return builder.View("/Views/Home/Index.html", "Home");
 
                     };
