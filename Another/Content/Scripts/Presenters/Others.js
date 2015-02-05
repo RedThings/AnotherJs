@@ -80,29 +80,33 @@
         .CreatePresenter("About", function (p) {
 
             // set model state
-            p.Model.ShowImages = false;
-            p.Model.EnableButton = true;
+            p.Model.Inner = {}
+            p.Model.Inner.ShowImages = false;
+            p.Model.Inner.EnableButton = true;
+
+            // set inner observes
+            p.ObserveInnerObject("Inner");
 
             // set events
             p.Element("#btnShowHide").click(function (e) {
                 e.preventDefault();
-                p.Model.ShowImages = !p.Model.ShowImages;
+                p.Model.Inner.ShowImages = !p.Model.Inner.ShowImages;
             });
             p.Element("#btnDisable").click(function (e) {
                 e.preventDefault();
-                p.Model.EnableButton = !p.Model.EnableButton;
+                p.Model.Inner.EnableButton = !p.Model.Inner.EnableButton;
             });
 
             // set conditionals
             p.ShowWhen(["#firstImage", "[data-showhide]"], function () {
-                return p.Model.ShowImages;
+                return p.Model.Inner.ShowImages;
             });
             p.EnableWhen(["#btnShowHide"], function () {
-                return p.Model.EnableButton === true;
+                return p.Model.Inner.EnableButton === true;
             });
 
             // set bindings
-            p.Bind("ShowImages", function (res) {
+            p.Bind("Inner.ShowImages", function (res) {
                 console.log("Show Images ", res);
             });
 
