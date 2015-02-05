@@ -1554,8 +1554,8 @@ if (jQuery === undefined) {
     // add depenency
     a.AddDependency = function (name, type, deps, dep) {
         if (IsNullOrUndefined(dep)) {
+            dep = deps;
             deps = [];
-            dep = undefined;
         }
 
         if (IsNullOrUndefined(name) || IsNullOrUndefined(type) || name.IsNullOrEmpty() || type.IsNullOrEmpty() || !a.Helpers.IsFunc(dep))
