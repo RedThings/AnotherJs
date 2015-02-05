@@ -757,7 +757,9 @@ if (jQuery === undefined) {
                 });
 
             });
-
+            a.PresenterOnChangers.forEach(function(func) {
+                func(ts);
+            });
         }
 
         // should be observable
@@ -802,9 +804,18 @@ if (jQuery === undefined) {
 
         // Add element observer
         this.BindElement = function (propName, selector, func) {
-            if (a.Helpers.IsUndefinedOrNull(propName) || propName.IsNullOrEmpty() || selector.IsNullOrEmpty())
-                throw ("BindElement: propName and selector must be a string with value");
-            var el = ts.Element(selector);
+
+            var el;
+
+            // check
+            if (typeof selector !== "string") {
+                el = selector;
+            } else {
+                if (a.Helpers.IsUndefinedOrNull(propName) || propName.IsNullOrEmpty() || selector.IsNullOrEmpty())
+                    throw ("BindElement: propName and selector must be a string with value");
+                el = ts.Element(selector);
+            }
+            
             _observables.push({ PropName: propName, Callback: func, Elements: [el] });
             return el;
         }
@@ -1148,37 +1159,6 @@ if (jQuery === undefined) {
 
         }
 
-        // form
-        this.Form = function (selector, onSubmitFunc) {
-
-            var theForm = ts.Element(selector);
-            if (theForm.length <= 0)
-                theForm = domHelper("<form />");
-
-            // set dirty
-            theForm.IsDirty = function () {
-                return theForm.data("isDirty") === true;
-            };
-            // get children
-            var childs = theForm.children();
-            // bind
-            childs.each(function (i, chld) {
-                var child = domHelper(chld);
-                child.change(function () {
-                    theForm.data("isDirty", true);
-                });
-            });
-
-            // set submit
-            theForm.submit(function (e) {
-                e.preventDefault();
-                onSubmitFunc(theForm);
-                return false;
-            });
-            return theForm;
-
-        }
-
         // set observer
         this.SetObserve = function () {
 
@@ -1236,6 +1216,87 @@ if (jQuery === undefined) {
         this.SubscribeToEvent = function (evName, func) {
             a.SubscribeToEvent(evName, func);
             return ts;
+        }
+
+        // update model
+        this.UpdateModel = function(propName, theVal) {
+            
+            if (propName.indexOf(".") < 0) {
+                ts.Model[propName] = theVal;
+            } else {
+
+                var str = "ts.Model";
+                propName.split(".").forEach(function(pn) {
+
+                    str += "['" + pn + "']";
+
+                });
+                str += " = theVal;";
+                eval(str);
+            }
+        }
+
+        /*
+         * SHORTCUTS
+         */
+        this.Click = function (selector, func) {
+            
+            if (typeof selector === "string") {
+                ts.Container.on("click", selector,function(e) {
+                    e.preventDefault();
+                    func(e, domHelper(this));
+                });
+            } else {
+                selector.forEach(function(sl) {
+                    ts.Container.on("click", sl, function (e) {
+                        e.preventDefault();
+                        func(e, domHelper(this));
+                    });
+                });
+            }
+
+            return ts;
+        }
+        // form
+        var bindSubmit = function (sl, onSubmitFunc) {
+            var theForm = ts.Element(sl);
+            if (theForm.length <= 0)
+                theForm = domHelper("<form />");
+
+            // set dirty
+            theForm.IsDirty = function () {
+                return theForm.data("isDirty") === true;
+            };
+            // get children
+            theForm.each(function(i, chld) {
+                
+                var child = domHelper(chld);
+                child.change(function() {
+                    theForm.data("isDirty", true);
+                });
+
+
+            });
+
+            // set submit
+            theForm.submit(function (e) {
+                e.preventDefault();
+                onSubmitFunc(theForm);
+                return false;
+            });
+        }
+        this.Submit = function (selectors, onSubmitFunc) {
+            
+            if (typeof selectors === "string") {
+                bindSubmit(selectors, onSubmitFunc);
+            } else {
+                selectors.forEach(function(sl) {
+                    bindSubmit(sl, onSubmitFunc);
+                });
+            }
+            
+            return ts;
+
         }
     }
 
@@ -1359,6 +1420,15 @@ if (jQuery === undefined) {
             return ts;
         }
 
+        // on init
+        this.AddPresenterInitializer = function(onChange, func) {
+            a.PresenterInitializers.push(func);
+            if (onChange) {
+                a.PresenterOnChangers.push(func);
+            }
+        }
+
+
     }
 
     // applications bucket
@@ -1420,6 +1490,11 @@ if (jQuery === undefined) {
 
         // run conditionals
         presenter.RunConditionals();
+
+        // initializers
+        a.PresenterInitializers.forEach(function(init) {
+            init(presenter);
+        });
 
         // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);
@@ -1654,8 +1729,11 @@ if (jQuery === undefined) {
 
     };
 
+    // inits
+    a.PresenterInitializers = [];
 
-
+    // changers
+    a.PresenterOnChangers = [];
 
     /*
      * 

@@ -1,0 +1,13 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=28024B7E63F24F1EAF5625C98CCA17E2/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=28024B7E63F24F1EAF5625C98CCA17E2/Name/@EntryValue">An</s:String>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=28024B7E63F24F1EAF5625C98CCA17E2/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String>
+	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=584EA810AC4E4E0B9ECEEA8F5C7CA98A/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=584EA810AC4E4E0B9ECEEA8F5C7CA98A/Name/@EntryValue">App is not null</s:String>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=584EA810AC4E4E0B9ECEEA8F5C7CA98A/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String>
+	<s:Boolean x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=F10D285884A74F70AF0F6957316E228C/@KeyIndexDefined">True</s:Boolean>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=F10D285884A74F70AF0F6957316E228C/Name/@EntryValue">App is not null</s:String>
+	<s:String x:Key="/Default/Housekeeping/UnitTestingMru/UnitTestSessionPersistentData/=F10D285884A74F70AF0F6957316E228C/XmlSerializedElements/@EntryValue">&lt;Session&gt;&lt;Elements /&gt;&lt;/Session&gt;</s:String>
+	
+	
+	</wpf:ResourceDictionary>

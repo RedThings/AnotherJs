@@ -14,8 +14,12 @@
                 data: "LongRepeater",
                 selector: "#long_repeater",
                 onRowBinding: function (el, row) {
-                    el.html(row);
+                    el.html("<a href='#' data-aclick>"+row+"</a>");
                 }
+            });
+            p.Click("[data-aclick]", function(e,el) {
+                console.log("Clicked: ", el);
+                console.log("From event: ", e);
             });
 
             var recurse = function () {
@@ -26,7 +30,6 @@
                     recurse();
                 }
             }
-
             p.Element("#btnStart").click(function (e) {
 
                 e.preventDefault();
@@ -38,7 +41,6 @@
 
 
             });
-
             p.Element("#btnAddMore").click(function (e) {
                 e.preventDefault();
                 console.log("Before ", p.Model.LongRepeater.length);

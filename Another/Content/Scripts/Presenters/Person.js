@@ -3,6 +3,24 @@
 
     app
         .CreatePresenter("PersonIndex", function (p) {
+            
+            // init form
+            var submitForm = function (frm) {
+                console.log("Is form dirty? ", frm.IsDirty());
+                console.log(p.Model);
+            }
+            p.Submit(["#person_search_form"], submitForm);
+
+            // datepicker options
+            p.DpOpts = {
+                
+                onSelect:function(date) {
+                    //p.Model.Dob = date;
+                },
+                dateFormat: "yy-mm-dd"
+
+            };
+            p.Model.Dob = "1978-11-17";
 
             // bind textbox
             var nameBox = p.BindElement("Name", "#person_search_name");
@@ -38,7 +56,7 @@
 
                 }
             });
-            subDeptEl = p.BindRepeaterControl({
+            p.BindRepeaterControl({
                 type: "select",
                 selector: "#person_search_subdept",
                 data: "SubDepts",
@@ -63,12 +81,7 @@
                 }
             });
 
-            // init form
-            var submitForm = function (frm) {
-                console.log("Is form dirty? ", frm.IsDirty());
-                console.log(p.Model.SubDeptIds);
-            }
-            p.Form("#person_search_form", submitForm);
+            
             p.Model.DeptId = undefined;
 
         })
