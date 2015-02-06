@@ -30,15 +30,15 @@ Another.Initialize();
 // test
 (function (app) {
 
-    QUnit.test("App is not null", function (ass) {
+    QUnit.test("1. App is not null", function (ass) {
         ass.ok(app !== undefined && app !== null, "OK");
     });
-    QUnit.test("Layout presenter", function (ass) {
+    QUnit.test("2. Layout presenter", function (ass) {
         var p = app.InitializePresenter("Layout", "#test_el1");
         ass.ok(p !== undefined, "Presenter exists");
         ass.ok(p.Model.SearchTerm === "", "Has search term");
     });
-    QUnit.test("Index person presenter", function (ass) {
+    QUnit.test("3. Index person presenter", function (ass) {
 
         var done = ass.async();
         var p;
@@ -75,17 +75,18 @@ Another.Initialize();
 
 
     });
-    QUnit.test("Test dependency has been mocked. (Testing the test)", function (ass) {
+    QUnit.test("4. Test dependency has been mocked. (Testing the test)", function (ass) {
         var dep = app.GetDependency("TestDep");
         ass.ok(dep.Funk() === undefined, "This means the mocking bloody works bloody hell");
     });
-    QUnit.test("Test dom-less", function (ass) {
+    QUnit.test("5. Test dom-less", function (ass) {
 
         var x;
         var done = ass.async();
         app.CreatePresenter("Test", function (p) {
             p.Model.Test = undefined;
-            x = p.BindElements("Test", ["kkokopkok", "posfdpokfsdpokf", "psopsdijfsijdf"]);
+            p.Bind("Test", ["kkokopkok", "posfdpokfsdpokf", "psopsdijfsijdf"]);
+            x = p.Element("aoijfsdoijfsdoijfs");
         });
         app.InitializePresenter("Test", "#test_el1", [], function (p) {
 
@@ -96,7 +97,7 @@ Another.Initialize();
 
 
     });
-    QUnit.test("Test deep clone and custom array (push only)", function (ass) {
+    QUnit.test("6. Test deep clone and custom array (push only)", function (ass) {
 
         // setup
         var done1 = ass.async();

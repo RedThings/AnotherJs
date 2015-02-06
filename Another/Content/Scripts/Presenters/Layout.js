@@ -26,7 +26,7 @@
         });
 
         // bind search term
-        presenter.BindElements("SearchTerm", ["#search_box", "#search_term"]);
+        presenter.Bind("SearchTerm", ["#search_box", "#search_term"]);
 
         // test crap
         var svc = presenter.GetService("FormService");
@@ -45,9 +45,9 @@
         presenter.Model.Bucket = { Inner: {} };
         presenter.ObserveInnerObject("Bucket.Inner");
 
-        presenter.SubscribeToEvent("OnModelChanged", function(obj) {
-            console.log(obj);
-        });
+        //presenter.SubscribeToEvent("OnModelChanged", function(obj) {
+        //    console.log(obj);
+        //});
 
     }
 

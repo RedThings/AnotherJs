@@ -3,7 +3,7 @@
 
     app
         .CreatePresenter("PersonIndex", function (p) {
-            
+
             // init model
             p.Model.Inner = {
                 Inner: {
@@ -12,19 +12,19 @@
                     }
                 }
             };
-            
+
             // init datepicker
             p.JuiDatepicker("#person_search_dob", {
                 dateFormat: "yy-mm-dd",
                 model: "Inner.Inner.Inner.Dob",
-                onSelect:function(vl, dp) {
+                onSelect: function (vl, dp) {
                     //console.log("from presenter");
                 }
 
             });
 
             // init date
-            p.Model.Inner.Inner.Inner.Dob = "1978-11-17";
+            //p.Model.Inner.Inner.Inner.Dob = "1978-11-17";
 
             // init form
             var submitForm = function (e, frm) {
@@ -38,7 +38,8 @@
 
 
             // bind textbox
-            var nameBox = p.BindElement("Name", "#person_search_name");
+            p.Bind("Name", "#person_search_name");
+            
 
             // bind depts
             var subDeptEl;
@@ -95,6 +96,21 @@
 
                 }
             });
+
+            var ages = [{Name:"",Value:undefined}, { Name: "18-30", Value: "18-30" }, { Name: "30-49", Value: "30-49" }, { Name: "50+", Value: "50+" }]
+            p.BindRepeaterControl({
+                type: "select",
+                selector: "#person_search_age",
+                data: ages,
+                dataTextField: "Name",
+                dataValueField: "Value",
+                model: "Age",
+                multi: false,
+                onChange: function (newVal) {
+
+                }
+            });
+
 
 
             p.Model.DeptId = undefined;

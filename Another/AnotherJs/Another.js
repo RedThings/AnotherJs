@@ -17,11 +17,6 @@ if (window.Another === undefined) {
     window.Another = {};
 }
 
-// error
-window.onerror = function (msg, url, lineNumber, colno, err) {
-    throw err;
-};
-
 // check jQuery
 if (jQuery === undefined) {
     throw new Error("Another currently uses jQuery v2.x as a dom helper");
@@ -153,11 +148,17 @@ if (jQuery === undefined) {
                         case "INPUT":
                         case "TEXTAREA":
                             {
-                                doTextInputOrElementChange(el, context, newValName, theValue);
+                                doElementChange(el, context, newValName, theValue, "keyup");
+                                break;
+                            }
+                        case "SELECT":
+                            {
+                                doElementChange(el, context, newValName, theValue, "change");
                                 break;
                             }
                         default:
                             el.html(theValue);
+                            break;
                     }
 
 
@@ -173,13 +174,13 @@ if (jQuery === undefined) {
     }
 
     // do text input or element change change
-    var doTextInputOrElementChange = function (el, context, newValName, theValue) {
+    var doElementChange = function (el, context, newValName, theValue, evName) {
 
         if (el.data("an_change") === undefined) {
 
             el.data("an_change", true);
 
-            el.bind("keyup", function (e) {
+            el.bind(evName, function (e) {
                 el.data("change_from_element", true);
                 context[newValName] = el.val();
             });
@@ -191,6 +192,7 @@ if (jQuery === undefined) {
         } else {
             el.val(theValue);
         }
+
     }
 
     // get observable
@@ -716,8 +718,8 @@ if (jQuery === undefined) {
                         var theValue = newVal.object[newVal.name];
 
                         // check
-                        if (shouldBeObservable(theValue)) {
-                            var conv = convertToObservable(theValue, context, newVal.name, _observables, subName + newVal.name);
+                        if (shouldBeObservableArray(theValue)) {
+                            var conv = convertToObservableArray(theValue, context, newVal.name, _observables, subName + newVal.name);
                             context[newVal.name] = conv;
                         } else {
 
@@ -763,13 +765,37 @@ if (jQuery === undefined) {
             });
         }
 
+        // observes
+        this.RunElObserves = function () {
+
+            _observables.forEach(function (obs) {
+
+                if (!IsNullOrUndefined(obs.Elements)) {
+                    var contxt;
+                    var propNameSplt = obs.PropName.split(".");
+                    var propString = "contxt = ts.Model";
+                    for (var i = 0; i < propNameSplt.length - 1; i++) {
+                        propString += "." + propNameSplt[0];
+                    }
+                    console.log(propString);
+                    eval(propString);
+
+                    // ReSharper disable once UsageOfPossiblyUnassignedValue
+                    checkAndFireFromObservable(contxt, obs, obs.PropName, contxt[obs.PropName]);
+
+                }
+
+            });
+
+        }
+
         // should be observable
-        var shouldBeObservable = function (obj) {
+        var shouldBeObservableArray = function (obj) {
             return a.Helpers.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
         }
 
         // convert to observable
-        var convertToObservable = function (theValue, parentObj, childObjName, theObservables, fullName) {
+        var convertToObservableArray = function (theValue, parentObj, childObjName, theObservables, fullName) {
             if (IsNullOrUndefined(fullName) || fullName.IsNullOrEmpty())
                 throw new Error("ConverToObservable final parameter is full graph name preceding the property name eg 'Level1.Leve2.'");
             var oArray = new a.ObservableArray();
@@ -788,8 +814,8 @@ if (jQuery === undefined) {
 
             for (var ooo in obj) {
                 var innerObj = obj[ooo];
-                if (shouldBeObservable(innerObj)) {
-                    obj[ooo] = convertToObservable(obj[ooo], obj, ooo, _observables, preName + ooo);
+                if (shouldBeObservableArray(innerObj)) {
+                    obj[ooo] = convertToObservableArray(obj[ooo], obj, ooo, _observables, preName + ooo);
                 }
             }
         }
@@ -797,14 +823,49 @@ if (jQuery === undefined) {
         // model
         this.Model = model;
 
+        // bind
+        this.Bind = function (propNameOrData, selectors, callback) {
+
+            if (IsNullOrUndefined(callback) && typeof selectors === "function") {
+                callback = selectors;
+                selectors = undefined;
+            }
+
+            if (typeof propNameOrData === "string") {
+
+                if (typeof callback === "function" && IsNullOrUndefined(selectors)) {
+                    bind(propNameOrData, callback);
+                } else {
+
+                    // dynamic
+                    if (a.Helpers.IsArray(selectors)) {
+                        bindElements(propNameOrData, selectors, callback);
+                    } else {
+                        bindElement(propNameOrData, selectors, callback);
+                    }
+                }
+
+            } else {
+                // static
+                if (a.Helpers.IsArray(selectors)) {
+                    bindElementsStatic(propNameOrData, selectors, callback);
+                } else {
+                    bindElementStatic(propNameOrData, selectors, callback);
+                }
+            }
+
+            return ts;
+
+        };
+
         // Add observer
-        this.Bind = function (propName, func) {
+        var bind = function (propName, func) {
             _observables.push({ PropName: propName, Callback: func, Elements: null });
             return ts;
         }
 
         // Add element observer
-        this.BindElement = function (propName, selector, func) {
+        var bindElement = function (propName, selector, func) {
 
             var el;
 
@@ -822,7 +883,7 @@ if (jQuery === undefined) {
         }
 
         // Add element observer
-        this.BindElements = function (propName, selectors, func) {
+        var bindElements = function (propName, selectors, func) {
             if (a.Helpers.IsUndefinedOrNull(propName) || propName.IsNullOrEmpty() || selectors.IsNullOrEmpty())
                 throw new Error("BindElements: propName and selectors must be a string with value");
             var els = [];
@@ -835,7 +896,7 @@ if (jQuery === undefined) {
         }
 
         // Add element observer
-        this.BindElementStatic = function (val, selector) {
+        var bindElementStatic = function (val, selector) {
             if (a.Helpers.IsUndefinedOrNull(val) || val.IsNullOrEmpty() || selector.IsNullOrEmpty())
                 throw ("BindElementStatic: val and selector must be a string with value");
             var el = ts.Element(selector);
@@ -845,7 +906,7 @@ if (jQuery === undefined) {
         }
 
         // Add element observer
-        this.BindElementsStatic = function (val, selectors) {
+        var bindElementsStatic = function (val, selectors) {
             if (a.Helpers.IsUndefinedOrNull(val) || val.IsNullOrEmpty() || selectors.IsNullOrEmpty())
                 throw new Error("BindElementsStatic: val and selectors must be a string with value");
             var els = [];
@@ -910,7 +971,6 @@ if (jQuery === undefined) {
                     ts.BindRepeaterControl(opts);
 
                 });
-
                 var outputEl = ts.Element(opts.selector);
                 if (outputEl.length < 1) outputEl = ts.DomHelper("<div />");
                 return outputEl;
@@ -982,7 +1042,9 @@ if (jQuery === undefined) {
                                 }
                             case "select":
                                 {
-                                    newInputHtml = "<option value='" + d[opts.dataValueField] + "'>" + d[opts.dataTextField] + "</option>";
+                                    var vl = d[opts.dataValueField];
+                                    var vltxt = vl === undefined ? "" : vl;
+                                    newInputHtml = "<option value='" + vltxt + "'>" + d[opts.dataTextField] + "</option>";
                                     newInput = domHelper(newInputHtml);
                                     break;
                                 }
@@ -1003,6 +1065,7 @@ if (jQuery === undefined) {
 
                                     // 
                                     if (opts.multi !== true) {
+
 
                                         // switch type
                                         switch (opts.type) {
@@ -1098,7 +1161,9 @@ if (jQuery === undefined) {
 
                             // set model
                             var theDataInner = el.val();
-                            ts.Model[opts.model] = IsNullOrUndefined(theDataInner) ? [] : theDataInner;
+                            ts.Model[opts.model] =
+                                theDataInner === "" ? undefined :
+                                IsNullOrUndefined(theDataInner) ? (opts.multi === true ? [] : undefined) : theDataInner;
 
                         });
 
@@ -1107,7 +1172,9 @@ if (jQuery === undefined) {
                     // set model and trigger once!
                     el.data("change_from_element", true);
                     var theData = el.val();
-                    ts.Model[opts.model] = IsNullOrUndefined(theData) ? [] : theData;
+                    ts.Model[opts.model] =
+                        theData === "" ? undefined :
+                        IsNullOrUndefined(theData) ? (opts.multi===true ? [] : undefined) : theData;
                     el.trigger("change");
 
                 }
@@ -1183,6 +1250,8 @@ if (jQuery === undefined) {
 
             if (ts.InnerObservers[theName] === undefined) {
 
+
+
                 // do via eval str
                 var outputString = "Object.observe(";
                 var modelString = "ts.Model";
@@ -1195,6 +1264,8 @@ if (jQuery === undefined) {
                 outputString += modelString + ", function (newVals) {";
                 outputString += "ts.RunConditionals(); doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
                 outputString += "});";
+
+
                 eval(outputString);
 
                 ts.InnerObservers[theName] = theName;
@@ -1463,6 +1534,9 @@ if (jQuery === undefined) {
             str += ");";
             eval(str);
         }
+
+        // observes
+        presenter.RunElObserves();
 
         // run conditionals
         presenter.RunConditionals();
