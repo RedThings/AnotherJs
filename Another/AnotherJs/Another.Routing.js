@@ -282,7 +282,7 @@ if (window.Another === undefined) {
 
                     if (found) {
                         container.html(found);
-                        a.InitializePresenter(presenter,container, a.Route.Chunks.splice(2));
+                        a.InitializePresenter(presenter,container,a.Route.Chunks.splice(2));
                         a.Route.Presenter = presenter;
                         a.Route.View = view;
                         a.RaiseEvent("OnRouteChangeSuccess", { Route: a.Route });

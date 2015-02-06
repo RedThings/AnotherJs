@@ -777,7 +777,6 @@ if (jQuery === undefined) {
                     for (var i = 0; i < propNameSplt.length - 1; i++) {
                         propString += "." + propNameSplt[0];
                     }
-                    console.log(propString);
                     eval(propString);
 
                     // ReSharper disable once UsageOfPossiblyUnassignedValue
@@ -964,6 +963,11 @@ if (jQuery === undefined) {
         this.BindRepeaterControl = function (opts) {
 
             // check
+            if (a.Helpers.StringIsNullOrEmpty(opts.selector) || a.Helpers.StringIsNullOrEmpty(opts.valueField) || a.Helpers.StringIsNullOrEmpty(opts.textField)) {
+                throw new Error("BindRepeaterControl: options.selector, options.valueField and options.textField cannot be null or empty");
+            }
+
+            // check
             if (typeof opts.data === "string") {
                 ts.Bind(opts.data, function (newVal) {
 
@@ -976,6 +980,21 @@ if (jQuery === undefined) {
                 return outputEl;
             }
             else {
+
+                // get context
+                var contxt;
+                var propNameSplt = opts.model.split(".");
+                var propString = "contxt = ts.Model";
+                for (var i = 0; i < propNameSplt.length - 1; i++) {
+                    propString += "." + propNameSplt[0];
+                }
+                eval(propString);
+                var setContextProp = function (vl) {
+                    contxt[propNameSplt[propNameSplt.length - 1]] = vl;
+                }
+                var getContextProp = function () {
+                    return contxt[propNameSplt[propNameSplt.length - 1]];
+                }
 
                 // get element
                 var el = ts.Element(opts.selector);
@@ -1011,138 +1030,143 @@ if (jQuery === undefined) {
                 } else {
                     opts.data.forEach(function (d) {
 
-                        // start
-                        var newInput;
-                        var newInputHtml;
-                        var newLabelHtml;
-                        var newLabel;
-                        var evName;
-
-                        // switch types
-                        switch (opts.type) {
-                            case "radio":
-                                {
-                                    newInputHtml = "<input type='radio' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
-                                    newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
-                                    newInput = domHelper(newInputHtml);
-                                    newLabel = domHelper(newLabelHtml);
-                                    evName = "click";
-                                    el.parent().children("label:first").attr("for", newName);
-                                    break;
-                                }
-                            case "checkbox":
-                                {
-                                    newInputHtml = "<input type='checkbox' name='" + newName + "' value='" + d[opts.dataValueField] + "' />";
-                                    newLabelHtml = "<span>" + d[opts.dataTextField] + "</span>";
-                                    newInput = domHelper(newInputHtml);
-                                    newLabel = domHelper(newLabelHtml);
-                                    evName = "click";
-                                    el.parent().children("label:first").attr("for", newName);
-                                    break;
-                                }
-                            case "select":
-                                {
-                                    var vl = d[opts.dataValueField];
-                                    var vltxt = vl === undefined ? "" : vl;
-                                    newInputHtml = "<option value='" + vltxt + "'>" + d[opts.dataTextField] + "</option>";
-                                    newInput = domHelper(newInputHtml);
-                                    break;
-                                }
-                            default:
-                                throw new Error("BindRepeaterControl: " + opts.type + " not implemented");
-                        }
-
-                        // not select
-                        if (opts.type !== "select") {
-
-                            // bind change / click / whatever
-                            if (!IsNullOrUndefined(evName) && newInput.data(evName + "_bound") !== true) {
-                                newInput.data(evName + "_bound", true);
-                                newInput.bind(evName, function (e) {
-
-                                    // denote coming from element event
-                                    el.data("change_from_element", true);
-
-                                    // 
-                                    if (opts.multi !== true) {
+                        if (!IsNullOrUndefined(d)) {
 
 
-                                        // switch type
-                                        switch (opts.type) {
+                            // start
+                            var newInput;
+                            var newInputHtml;
+                            var newLabelHtml;
+                            var newLabel;
+                            var evName;
+                            var controlClass = IsNullOrUndefined(opts.controlClass) ? "" : " class='" + opts.controlClass + " " + opts.controlClass + "-" + opts.type + "'";
+                            var labelClass = IsNullOrUndefined(opts.labelClass) ? "" : " class='" + opts.labelClass + " " + opts.labelClass + "-" + opts.type + "'";
 
-                                            case "checkbox":
-                                                {
-                                                    var ischkd = newInput[0].checked;
-                                                    theGroup.forEach(function (theEl) {
-                                                        theEl[0].checked = false;
-                                                    });
-                                                    newInput[0].checked = ischkd;
-                                                    if (ischkd) {
-                                                        ts.Model[opts.model] = newInput.val();
-                                                    } else {
-                                                        ts.Model[opts.model] = undefined;
-                                                    }
-                                                    break;
-                                                }
-                                            default:
-                                                {
-                                                    ts.Model[opts.model] = newInput.val();
-                                                    break;
-                                                }
-                                        }
-                                        if (opts.type === "checkbox") {
-
-                                        }
-
-                                    } else {
-
-                                        // create data bucket
-                                        if (ts.Model[opts.model] === undefined)
-                                            ts.Model[opts.model] = [];
-
-                                        // create temp
-                                        var tempBucket = [];
-                                        ts.Model[opts.model].forEach(function (tmp) {
-                                            tempBucket.push(tmp);
-                                        });
-
-                                        // add
-                                        if (tempBucket.indexOf(newInput.val()) < 0) {
-                                            if (newInput[0].checked || newInput.attr("selected") === "selected") {
-                                                tempBucket.push(newInput.val());
-                                            }
-                                        } else {
-                                            if (!newInput[0].checked || newInput.attr("selected") !== "selected") {
-                                                var indx = tempBucket.indexOf(newInput.val());
-                                                tempBucket.splice(indx, 1);
-                                            }
-                                        }
-
-                                        // finally apply
-                                        ts.Model[opts.model] = tempBucket;
-
+                            // switch types
+                            switch (opts.type) {
+                                case "radio":
+                                    {
+                                        newInputHtml = "<input" + controlClass + " type='radio' name='" + newName + "' value='" + d[opts.valueField] + "' />";
+                                        newLabelHtml = "<span" + labelClass + ">" + d[opts.textField] + "</span>";
+                                        newInput = domHelper(newInputHtml);
+                                        newLabel = domHelper(newLabelHtml);
+                                        evName = "click";
+                                        el.parent().children("label:first").attr("for", newName);
+                                        break;
                                     }
-
-                                });
+                                case "checkbox":
+                                    {
+                                        newInputHtml = "<input" + controlClass + " type='checkbox' name='" + newName + "' value='" + d[opts.valueField] + "' />";
+                                        newLabelHtml = "<span" + labelClass + ">" + d[opts.textField] + "</span>";
+                                        newInput = domHelper(newInputHtml);
+                                        newLabel = domHelper(newLabelHtml);
+                                        evName = "click";
+                                        el.parent().children("label:first").attr("for", newName);
+                                        break;
+                                    }
+                                case "select":
+                                    {
+                                        var vl = d[opts.valueField];
+                                        var vltxt = vl === undefined ? "" : vl;
+                                        newInputHtml = "<option value='" + vltxt + "'>" + d[opts.textField] + "</option>";
+                                        newInput = domHelper(newInputHtml);
+                                        break;
+                                    }
+                                default:
+                                    throw new Error("BindRepeaterControl: " + opts.type + " not implemented");
                             }
-                        }
 
-                        // add
-                        el.append(newInput);
-                        switch (opts.type) {
+                            // not select
+                            if (opts.type !== "select") {
 
-                            case "radio":
-                            case "checkbox":
-                                {
-                                    // ReSharper disable once UsageOfPossiblyUnassignedValue
-                                    el.append(newLabel);
-                                    break;
+                                // bind change / click / whatever
+                                if (!IsNullOrUndefined(evName) && newInput.data(evName + "_bound") !== true) {
+                                    newInput.data(evName + "_bound", true);
+                                    newInput.bind(evName, function (e) {
+
+                                        // denote coming from element event
+                                        el.data("change_from_element", true);
+
+                                        // 
+                                        if (opts.multi !== true) {
+
+
+                                            // switch type
+                                            switch (opts.type) {
+
+                                                case "checkbox":
+                                                    {
+                                                        var ischkd = newInput[0].checked;
+                                                        theGroup.forEach(function (theEl) {
+                                                            theEl[0].checked = false;
+                                                        });
+                                                        newInput[0].checked = ischkd;
+                                                        if (ischkd) {
+                                                            setContextProp(newInput.val());
+                                                        } else {
+                                                            setContextProp(undefined);
+                                                        }
+                                                        break;
+                                                    }
+                                                default:
+                                                    {
+                                                        setContextProp(newInput.val());
+                                                        break;
+                                                    }
+                                            }
+                                            if (opts.type === "checkbox") {
+
+                                            }
+
+                                        } else {
+
+                                            // create data bucket
+                                            if (getContextProp() === undefined)
+                                                setContextProp([]);
+
+                                            // create temp
+                                            var tempBucket = [];
+                                            getContextProp().forEach(function (tmp) {
+                                                tempBucket.push(tmp);
+                                            });
+
+                                            // add
+                                            if (tempBucket.indexOf(newInput.val()) < 0) {
+                                                if (newInput[0].checked || newInput.attr("selected") === "selected") {
+                                                    tempBucket.push(newInput.val());
+                                                }
+                                            } else {
+                                                if (!newInput[0].checked || newInput.attr("selected") !== "selected") {
+                                                    var indx = tempBucket.indexOf(newInput.val());
+                                                    tempBucket.splice(indx, 1);
+                                                }
+                                            }
+
+                                            // finally apply
+                                            setContextProp(tempBucket);
+
+                                        }
+
+                                    });
                                 }
-                            default:
-                                break;
-                        }
-                        theGroup.push(newInput);
+                            }
 
+                            // add
+                            el.append(newInput);
+                            switch (opts.type) {
+
+                                case "radio":
+                                case "checkbox":
+                                    {
+                                        // ReSharper disable once UsageOfPossiblyUnassignedValue
+                                        el.append(newLabel);
+                                        break;
+                                    }
+                                default:
+                                    break;
+                            }
+                            theGroup.push(newInput);
+                        }
                     });
 
                 }
@@ -1161,9 +1185,9 @@ if (jQuery === undefined) {
 
                             // set model
                             var theDataInner = el.val();
-                            ts.Model[opts.model] =
+                            setContextProp(
                                 theDataInner === "" ? undefined :
-                                IsNullOrUndefined(theDataInner) ? (opts.multi === true ? [] : undefined) : theDataInner;
+                                IsNullOrUndefined(theDataInner) ? (opts.multi === true ? [] : undefined) : theDataInner);
 
                         });
 
@@ -1172,9 +1196,9 @@ if (jQuery === undefined) {
                     // set model and trigger once!
                     el.data("change_from_element", true);
                     var theData = el.val();
-                    ts.Model[opts.model] =
+                    setContextProp(
                         theData === "" ? undefined :
-                        IsNullOrUndefined(theData) ? (opts.multi===true ? [] : undefined) : theData;
+                        IsNullOrUndefined(theData) ? (opts.multi === true ? [] : undefined) : theData);
                     el.trigger("change");
 
                 }
@@ -1189,9 +1213,9 @@ if (jQuery === undefined) {
 
                             var chekd;
                             if (opts.multi === true) {
-                                chekd = !IsNullOrUndefined(ts.Model[opts.model]) && ts.Model[opts.model].indexOf(jEl.val()) > -1;
+                                chekd = !IsNullOrUndefined(getContextProp()) && getContextProp().indexOf(jEl.val()) > -1;
                             } else {
-                                chekd = ts.Model[opts.model] == jEl.val();
+                                chekd = getContextProp() == jEl.val();
                             }
                             switch (opts.type) {
                                 case "radio":
@@ -1217,7 +1241,7 @@ if (jQuery === undefined) {
 
                     // finally
                     if (!IsNullOrUndefined(opts.onChange) && a.Helpers.IsFunc(opts.onChange)) {
-                        opts.onChange(ts.Model[opts.model]);
+                        opts.onChange(getContextProp());
                     }
                 });
 
@@ -1361,11 +1385,11 @@ if (jQuery === undefined) {
         this.CreatePresenter = function (name, func) {
 
             // check
-            if (a.PresenterCallbacks[name] !== undefined)
+            if (a.Presenters[name] !== undefined)
                 throw ("CreatePresenter: '" + name + "' already exists.");
 
             // add to application collection
-            a.PresenterCallbacks[name] = func;
+            a.Presenters[name] = func;
 
             //
             return ts;
@@ -1489,7 +1513,7 @@ if (jQuery === undefined) {
     };
 
     // presenter callbacks
-    a.PresenterCallbacks = {};
+    a.Presenters = {};
 
     // Initialize presenter
     a.InitializePresenter = function (name, container, arrayOfParams, callback) {
@@ -1508,13 +1532,13 @@ if (jQuery === undefined) {
         a.RaiseEvent("OnBeginPresenterInitializing", name);
 
         // find
-        var pCallback = a.PresenterCallbacks[name];
+        var presenterObj = a.Presenters[name];
 
         // check
-        if (a.Helpers.IsUndefinedOrNull(pCallback))
+        if (a.Helpers.IsUndefinedOrNull(presenterObj))
             throw ("Initialize Presenter: Cannot find presenter '" + name + "'");
 
-        a.RaiseEvent("OnPresenterInitializing", pCallback);
+        a.RaiseEvent("OnPresenterInitializing", presenterObj);
 
         // found so initialize
         var model = {};
@@ -1522,7 +1546,7 @@ if (jQuery === undefined) {
         presenter.SetObserve();
 
         if (IsNullOrUndefined(arrayOfParams) || arrayOfParams.IsNullOrEmpty()) {
-            pCallback(presenter);
+            presenterObj(presenter);
         } else {
             var str = "pCallback(presenter,";
             for (var i = 0; i < arrayOfParams.length; i++) {

@@ -1,119 +1,107 @@
 ﻿(function (app) {
 
+    // add blank
+    var addBlank = function(d) {
+        d.unshift({ Name: "", Id: "" });
+        return d;
+    }
 
     app
         .CreatePresenter("PersonIndex", function (p) {
 
-            // init model
-            p.Model.Inner = {
-                Inner: {
-                    Inner: {
-                        Dob: undefined
-                    }
-                }
-            };
+            function setModel() {
 
-            // init datepicker
-            p.JuiDatepicker("#person_search_dob", {
-                dateFormat: "yy-mm-dd",
-                model: "Inner.Inner.Inner.Dob",
-                onSelect: function (vl, dp) {
-                    //console.log("from presenter");
-                }
+                // empty model
+                p.Model.Form = {};
+                p.ObserveInnerObject("Form");
 
-            });
-
-            // init date
-            //p.Model.Inner.Inner.Inner.Dob = "1978-11-17";
-
-            // init form
-            var submitForm = function (e, frm) {
-                console.log("Is form dirty? ", frm.IsDirty());
-                console.log(p.Model);
-                console.log(p.Model.Inner.Inner.Inner.Dob);
             }
-            p.Submit(["#person_search_form"], { onSubmit: submitForm });
+            function getData() {
+                // get service
+                var svc = p.GetService("PersonService");
 
+                // get data
+                svc.GetDepts(function (d) { p.Model.Depts = d; });
+                svc.GetSubDepts(function (d) { p.Model.SubDepts = d; });
+                svc.GetJobs(function (d) { p.Model.Jobs = d; });
+                svc.GetAges(function (d) { p.Model.Ages = addBlank(d); });
+            }
+            function bindControls() {
 
+                // date
+                p.JuiDatepicker("#person_search_dob", {
+                    dateFormat: "yy-mm-dd",
+                    model: "Form.Dob",
+                    constrainInput: true,
+                    opener: "#btnOpenCalendar"
+                });
 
+                // bind repeaters
+                p.BindRepeaterControl({
+                    selector: "#person_search_dept",
+                    type: "radio",
+                    model: "Form.DeptId",
+                    data: "Depts",
+                    valueField: "Id",
+                    textField: "Name",
+                    controlClass: "another-control",
+                    labelClass: "another-control-label",
+                    onChange: function (deptId) {
 
-            // bind textbox
-            p.Bind("Name", "#person_search_name");
-            
+                        var subs = p.Model.SubDepts.filter(function (s) {
+                            return s !== null && s.DeptId == deptId;
+                        });
+                        p.Model.CurrentSubDepts = addBlank(subs);
+                        p.Model.ShowSubs = subs.length > 0;
 
-            // bind depts
-            var subDeptEl;
-            var subDeptRow = p.Element("#person_search_subdept_row");
-            var depts = [{ Name: "Dept1", Value: 1 }, { Name: "Dept2", Value: 2 }, { Name: "Dept3", Value: 3 }];
-            var subDepts = {
-                "1": [{ Name: "Dept11", Value: 11 }, { Name: "Dept12", Value: 12 }, { Name: "Dept13", Value: 13 }],
-                "2": [{ Name: "Dept21", Value: 21 }, { Name: "Dept22", Value: 22 }, { Name: "Dept23", Value: 23 }],
-                "3": [{ Name: "Dept31", Value: 31 }, { Name: "Dept32", Value: 32 }, { Name: "Dept33", Value: 33 }]
-            };
-            var jobTitles = [{ Name: "Job1", Value: 1 }, { Name: "Job2", Value: 2 }, { Name: "Job3", Value: 3 }];
-            p.BindRepeaterControl({
-                type: "radio",
-                selector: "#person_search_dept",
-                data: depts,
-                dataTextField: "Name",
-                dataValueField: "Value",
-                model: "DeptId",
-                onChange: function (newVal) {
-
-                    // change the sub depts
-                    p.Model.SubDepts = subDepts[newVal] || [];
-
-                    // hide / show row
-                    if (p.Model.SubDepts.length < 1) {
-                        subDeptRow.hide();
-                    } else {
-                        subDeptRow.show();
                     }
-
-                }
-            });
-            p.BindRepeaterControl({
-                type: "select",
-                selector: "#person_search_subdept",
-                data: "SubDepts",
-                dataTextField: "Name",
-                dataValueField: "Value",
-                model: "SubDeptIds",
-                multi: true,
-                onChange: function (newVal) {
-
-                }
-            });
-            p.BindRepeaterControl({
-                type: "checkbox",
-                selector: "#person_search_job",
-                data: jobTitles,
-                dataTextField: "Name",
-                dataValueField: "Value",
-                model: "JobTitleId",
-                multi: true,
-                onChange: function (newVal) {
-
-                }
-            });
-
-            var ages = [{Name:"",Value:undefined}, { Name: "18-30", Value: "18-30" }, { Name: "30-49", Value: "30-49" }, { Name: "50+", Value: "50+" }]
-            p.BindRepeaterControl({
-                type: "select",
-                selector: "#person_search_age",
-                data: ages,
-                dataTextField: "Name",
-                dataValueField: "Value",
-                model: "Age",
-                multi: false,
-                onChange: function (newVal) {
-
-                }
-            });
-
-
-
-            p.Model.DeptId = undefined;
+                });
+                p.ShowWhen("#person_search_subdept_row", function () {
+                    return p.Model.ShowSubs;
+                });
+                p.BindRepeaterControl({
+                    selector: "#person_search_subdept",
+                    type: "select",
+                    model: "Form.SubDeptIds",
+                    data: "CurrentSubDepts",
+                    valueField: "Id",
+                    textField: "Name",
+                    multi: true
+                });
+                p.BindRepeaterControl({
+                    selector: "#person_search_job",
+                    type: "checkbox",
+                    model: "Form.JobIds",
+                    data: "Jobs",
+                    valueField: "Id",
+                    textField: "Name",
+                    controlClass: "another-control",
+                    labelClass:"another-control-label",
+                    multi: true
+                });
+                p.BindRepeaterControl({
+                    selector: "#person_search_age",
+                    type: "select",
+                    model: "Form.Ages",
+                    data: "Ages",
+                    valueField: "Id",
+                    textField: "Name",
+                    multi: false
+                });
+            }
+            function bindForm() {
+                p.Submit("#person_search_form", {
+                    onSubmit:function(e, frm) {
+                        console.log(p.Model.Form);
+                    }
+                });
+            }
+            
+            // go
+            setModel();
+            getData();
+            bindControls();
+            bindForm();
 
         })
         .CreatePresenter("PersonCreate", function (p) {

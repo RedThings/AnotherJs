@@ -69,6 +69,7 @@
     <Content Include="AnotherJs\Another.Routing.min.js">
       <DependentUpon>Another.Routing.js</DependentUpon>
     </Content>
+    <Content Include="Content\Css\site.css" />
     <Content Include="Content\custom-theme\images\ui-bg_flat_0_999999_40x100.png" />
     <Content Include="Content\custom-theme\images\ui-bg_flat_0_aaaaaa_40x100.png" />
     <Content Include="Content\custom-theme\images\ui-bg_glass_55_fbf9ee_1x400.png" />

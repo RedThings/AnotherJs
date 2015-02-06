@@ -18,21 +18,21 @@ if (window.Another === undefined) {
 
 Another.jQueryUi = Another.CreateApplication("Another.jQueryUi");
 
-(function (aj,a) {
-    
-    aj.AddPresenterPlugin("JuiDatepicker", function(selectors, opts, presenter) {
-        
-        selectors.forEach(function(sl) {
-        
+(function (aj, a) {
+
+    aj.AddPresenterPlugin("JuiDatepicker", function (selectors, opts, presenter) {
+
+        selectors.forEach(function (sl) {
+
             var el = presenter.DomHelper(sl);
             if (!a.Helpers.StringIsNullOrEmpty(opts.model)) {
-                
+
                 // check if inner observe
                 if (opts.model.indexOf(".") > -1) {
 
                     var splt = opts.model.split(".");
                     var innerName = "";
-                    for (var i = 0; i < splt.length - 1;i++) {
+                    for (var i = 0; i < splt.length - 1; i++) {
                         innerName += splt[i];
                         if (i < splt.length - 2) innerName += ".";
                     }
@@ -52,8 +52,21 @@ Another.jQueryUi = Another.CreateApplication("Another.jQueryUi");
                     if (origSelect !== undefined) origSelect(vl, dp);
                 }
 
-                // finally
+                // bind button
+                if (!a.Helpers.IsUndefinedOrNull(opts.opener)) {
+                    presenter.Element(opts.opener);
+                    presenter.Click(opts.opener, {
+                        onClick: function () {
+                            el.datepicker("show");
+                        }
+                    });
+                }
+
+
+                // set dp
                 el.datepicker(opts);
+
+
 
             }
 
@@ -61,4 +74,4 @@ Another.jQueryUi = Another.CreateApplication("Another.jQueryUi");
 
     });
 
-})(Another.jQueryUi,Another);
+})(Another.jQueryUi, Another);
