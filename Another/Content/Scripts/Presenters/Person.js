@@ -4,23 +4,38 @@
     app
         .CreatePresenter("PersonIndex", function (p) {
             
+            // init model
+            p.Model.Inner = {
+                Inner: {
+                    Inner: {
+                        Dob: undefined
+                    }
+                }
+            };
+            
+            // init datepicker
+            p.JuiDatepicker("#person_search_dob", {
+                dateFormat: "yy-mm-dd",
+                model: "Inner.Inner.Inner.Dob",
+                onSelect:function(vl, dp) {
+                    //console.log("from presenter");
+                }
+
+            });
+
+            // init date
+            p.Model.Inner.Inner.Inner.Dob = "1978-11-17";
+
             // init form
-            var submitForm = function (frm) {
+            var submitForm = function (e, frm) {
                 console.log("Is form dirty? ", frm.IsDirty());
                 console.log(p.Model);
+                console.log(p.Model.Inner.Inner.Inner.Dob);
             }
-            p.Submit(["#person_search_form"], submitForm);
+            p.Submit(["#person_search_form"], { onSubmit: submitForm });
 
-            // datepicker options
-            p.DpOpts = {
-                
-                onSelect:function(date) {
-                    //p.Model.Dob = date;
-                },
-                dateFormat: "yy-mm-dd"
 
-            };
-            p.Model.Dob = "1978-11-17";
+
 
             // bind textbox
             var nameBox = p.BindElement("Name", "#person_search_name");
@@ -65,7 +80,7 @@
                 model: "SubDeptIds",
                 multi: true,
                 onChange: function (newVal) {
-                    
+
                 }
             });
             p.BindRepeaterControl({
@@ -81,7 +96,7 @@
                 }
             });
 
-            
+
             p.Model.DeptId = undefined;
 
         })

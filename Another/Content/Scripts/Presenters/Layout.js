@@ -45,6 +45,10 @@
         presenter.Model.Bucket = { Inner: {} };
         presenter.ObserveInnerObject("Bucket.Inner");
 
+        presenter.SubscribeToEvent("OnModelChanged", function(obj) {
+            console.log(obj);
+        });
+
     }
 
     app.CreatePresenter("Layout", layoutPresenter);

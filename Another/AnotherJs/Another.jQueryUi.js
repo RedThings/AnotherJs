@@ -19,6 +19,48 @@ if (window.Another === undefined) {
 Another.jQueryUi = Another.CreateApplication("Another.jQueryUi");
 
 (function (aj,a) {
+    
+    aj.AddPresenterPlugin("JuiDatepicker", function(selectors, opts, presenter) {
+        
+        selectors.forEach(function(sl) {
+        
+            var el = presenter.DomHelper(sl);
+            if (!a.Helpers.StringIsNullOrEmpty(opts.model)) {
+                
+                // check if inner observe
+                if (opts.model.indexOf(".") > -1) {
+
+                    var splt = opts.model.split(".");
+                    var innerName = "";
+                    for (var i = 0; i < splt.length - 1;i++) {
+                        innerName += splt[i];
+                        if (i < splt.length - 2) innerName += ".";
+                    }
+                    
+                    presenter.ObserveInnerObject(innerName);
+                }
+
+                // bind el
+                presenter.BindElement(opts.model, el);
+
+                // sort out options
+                var origSelect = opts.onSelect;
+                opts.onSelect = function (vl, dp) {
+                    if (!a.Helpers.StringIsNullOrEmpty(opts.model)) {
+                        presenter.UpdateModel(opts.model, vl);
+                    }
+                    dp.input.trigger("change");
+                    if (origSelect !== undefined) origSelect(vl, dp);
+                }
+
+                // finally
+                el.datepicker(opts);
+
+            }
+
+        });
+
+    });
 
     var onslct = function(p, modelName, dt, theEl) {
         if (!a.Helpers.IsUndefinedOrNull(modelName)) {
@@ -80,16 +122,16 @@ Another.jQueryUi = Another.CreateApplication("Another.jQueryUi");
 
         }
     }
-    aj.AddPresenterInitializer(false, function (p) {
+    //aj.AddPresenterInitializer(false, function (p) {
         
-        // get options
-        p.Container.find("[data-another-date-picker]").each(function (i, el) {
-            bindDp(p, el);
-        });
-        p.Container.find("[another-date-picker]").each(function (i, el) {
-            bindDp(p, el);
-        });
+    //    // get options
+    //    p.Container.find("[data-another-date-picker]").each(function (i, el) {
+    //        bindDp(p, el);
+    //    });
+    //    p.Container.find("[another-date-picker]").each(function (i, el) {
+    //        bindDp(p, el);
+    //    });
 
-    });
+    //});
 
 })(Another.jQueryUi,Another);

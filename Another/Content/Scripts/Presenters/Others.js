@@ -17,9 +17,11 @@
                     el.html("<a href='#' data-aclick>"+row+"</a>");
                 }
             });
-            p.Click("[data-aclick]", function(e,el) {
-                console.log("Clicked: ", el);
-                console.log("From event: ", e);
+            p.Click("[data-aclick]", {
+                onClick: function (e, el) {
+                    console.log("Clicked: ", el);
+                    console.log("From event: ", e);
+                }
             });
 
             var recurse = function () {

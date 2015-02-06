@@ -697,6 +697,8 @@ if (jQuery === undefined) {
         // on observe
         function doOnObserve(newVals, context, subName) {
 
+            ts.RaiseEvent("OnModelChanged", { Model: ts.Model, NewVals: newVals });
+
             // check
             if (IsNullOrUndefined(subName)) subName = "";
 
@@ -728,10 +730,12 @@ if (jQuery === undefined) {
 
             });
 
+
+            ts.RaiseEvent("OnModelObserved", { Model: ts.Model, NewVals: newVals });
         };
 
         // conditionals
-        this.RunConditionals=function() {
+        this.RunConditionals = function () {
 
             ts.PresenterConditionals.forEach(function (obj) {
 
@@ -756,9 +760,6 @@ if (jQuery === undefined) {
 
                 });
 
-            });
-            a.PresenterOnChangers.forEach(function(func) {
-                func(ts);
             });
         }
 
@@ -815,7 +816,7 @@ if (jQuery === undefined) {
                     throw ("BindElement: propName and selector must be a string with value");
                 el = ts.Element(selector);
             }
-            
+
             _observables.push({ PropName: propName, Callback: func, Elements: [el] });
             return el;
         }
@@ -1180,23 +1181,31 @@ if (jQuery === undefined) {
         // observer inner
         this.ObserveInnerObject = function (theName) {
 
-            // do via eval str
-            var outputString = "Object.observe(";
-            var modelString = "ts.Model";
-            var splt = theName.split(".");
-            var joinStr = splt.join(".") + ".";
-            for (var i = 0; i < splt.length; i++) {
-                modelString += "['" + splt[i] + "']";
-            }
-            outputString = "checkAndChangeArrays(" + modelString + ",'" + joinStr + "'); " + outputString;
-            outputString += modelString + ", function (newVals) {";
-            outputString += "ts.RunConditionals(); doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
-            outputString += "});";
-            eval(outputString);
+            if (ts.InnerObservers[theName] === undefined) {
 
-            return ts;
+                // do via eval str
+                var outputString = "Object.observe(";
+                var modelString = "ts.Model";
+                var splt = theName.split(".");
+                var joinStr = splt.join(".") + ".";
+                for (var i = 0; i < splt.length; i++) {
+                    modelString += "['" + splt[i] + "']";
+                }
+                outputString = "checkAndChangeArrays(" + modelString + ",'" + joinStr + "'); " + outputString;
+                outputString += modelString + ", function (newVals) {";
+                outputString += "ts.RunConditionals(); doOnObserve(newVals, " + modelString + ", '" + joinStr + "');";
+                outputString += "});";
+                eval(outputString);
+
+                ts.InnerObservers[theName] = theName;
+
+                return ts;
+            }
 
         }
+
+        // inner observes
+        this.InnerObservers = {};
 
         // conditionals
         this.PresenterConditionals = [];
@@ -1219,14 +1228,14 @@ if (jQuery === undefined) {
         }
 
         // update model
-        this.UpdateModel = function(propName, theVal) {
-            
+        this.UpdateModel = function (propName, theVal) {
+
             if (propName.indexOf(".") < 0) {
                 ts.Model[propName] = theVal;
             } else {
 
                 var str = "ts.Model";
-                propName.split(".").forEach(function(pn) {
+                propName.split(".").forEach(function (pn) {
 
                     str += "['" + pn + "']";
 
@@ -1234,69 +1243,6 @@ if (jQuery === undefined) {
                 str += " = theVal;";
                 eval(str);
             }
-        }
-
-        /*
-         * SHORTCUTS
-         */
-        this.Click = function (selector, func) {
-            
-            if (typeof selector === "string") {
-                ts.Container.on("click", selector,function(e) {
-                    e.preventDefault();
-                    func(e, domHelper(this));
-                });
-            } else {
-                selector.forEach(function(sl) {
-                    ts.Container.on("click", sl, function (e) {
-                        e.preventDefault();
-                        func(e, domHelper(this));
-                    });
-                });
-            }
-
-            return ts;
-        }
-        // form
-        var bindSubmit = function (sl, onSubmitFunc) {
-            var theForm = ts.Element(sl);
-            if (theForm.length <= 0)
-                theForm = domHelper("<form />");
-
-            // set dirty
-            theForm.IsDirty = function () {
-                return theForm.data("isDirty") === true;
-            };
-            // get children
-            theForm.each(function(i, chld) {
-                
-                var child = domHelper(chld);
-                child.change(function() {
-                    theForm.data("isDirty", true);
-                });
-
-
-            });
-
-            // set submit
-            theForm.submit(function (e) {
-                e.preventDefault();
-                onSubmitFunc(theForm);
-                return false;
-            });
-        }
-        this.Submit = function (selectors, onSubmitFunc) {
-            
-            if (typeof selectors === "string") {
-                bindSubmit(selectors, onSubmitFunc);
-            } else {
-                selectors.forEach(function(sl) {
-                    bindSubmit(sl, onSubmitFunc);
-                });
-            }
-            
-            return ts;
-
         }
     }
 
@@ -1406,7 +1352,7 @@ if (jQuery === undefined) {
                 // self
                 var ts1 = this;
 
-               // find
+                // find
                 var foundCallback = a.PresenterConditionals[name];
                 if (IsNullOrUndefined(foundCallback))
                     throw new Error("PresenterConditional '" + name + "' does not exist.");
@@ -1420,14 +1366,44 @@ if (jQuery === undefined) {
             return ts;
         }
 
-        // on init
-        this.AddPresenterInitializer = function(onChange, func) {
-            a.PresenterInitializers.push(func);
-            if (onChange) {
-                a.PresenterOnChangers.push(func);
-            }
-        }
+        // plugins
+        this.AddPresenterPlugin = function (name, callback) {
 
+            // check
+            if (a.PresenterPlugins[name] !== undefined) {
+                throw new Error("PresenterPlugin '" + name + "' already exists.");
+            }
+
+            // callback
+            a.PresenterPlugins[name] = callback;
+
+            // add to presenter proto
+            a.AnotherPresenter.prototype[name] = function (selector, opts) {
+
+                // self
+                var ts1 = this;
+
+                // find
+                var plugin = a.PresenterPlugins[name];
+                if (IsNullOrUndefined(plugin))
+                    throw new Error("PresenterPlugin '" + name + "' does not exist.");
+
+
+                // run!
+                var selectors;
+                if (a.Helpers.IsArray(selector)) {
+                    selectors = selector;
+                } else {
+                    selectors = [selector];
+                }
+                plugin(selectors, opts, ts1);
+
+            }
+
+            //
+            return ts;
+
+        }
 
     }
 
@@ -1491,11 +1467,6 @@ if (jQuery === undefined) {
         // run conditionals
         presenter.RunConditionals();
 
-        // initializers
-        a.PresenterInitializers.forEach(function(init) {
-            init(presenter);
-        });
-
         // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);
 
@@ -1526,6 +1497,9 @@ if (jQuery === undefined) {
 
         // find
         var foundEv = a.CreateEvent(name);
+
+        // create obj
+        obj.Event = { Timestamp: new Date(), Name: name }
 
         // loop subscibers
         foundEv.Subscribers.forEach(function (s) {
@@ -1692,6 +1666,9 @@ if (jQuery === undefined) {
     // conditionals
     a.PresenterConditionals = {};
 
+    // plugins
+    a.PresenterPlugins = {};
+
     // kick the whole thing off!
     a.Initialize = function (callback) {
 
@@ -1729,11 +1706,7 @@ if (jQuery === undefined) {
 
     };
 
-    // inits
-    a.PresenterInitializers = [];
 
-    // changers
-    a.PresenterOnChangers = [];
 
     /*
      * 
@@ -1750,8 +1723,36 @@ if (jQuery === undefined) {
         ad.AddDependency("Http", "Static", [], function () {
 
             this.Get = a.DomHelper.get;
-            this.Post = a.DomHelper.post;
+            this.Post = function (url, data) {
+                return a.DomHelper.post(url, JSON.stringify(data));
+            }
             this.Ajax = a.DomHelper.ajax;
+            this.Put = function (url, data) {
+                return a.DomHelper.ajax({
+                    url: url,
+                    data: JSON.stringify(data),
+                    type: "PUT",
+
+                });
+
+            }
+
+            this.Delete = function (url, data) {
+                return a.DomHelper.ajax({
+                    url: url,
+                    data: JSON.stringify(data),
+                    type: "DELETE"
+                });
+
+            }
+
+            this.Patch = function (url, data) {
+                return a.DomHelper.ajax({
+                    url: url,
+                    data: JSON.stringify(data),
+                    type: "PATCH"
+                });
+            }
 
         });
 
@@ -1789,7 +1790,7 @@ if (jQuery === undefined) {
 
         // enable when
         ac.AddPresenterConditional("EnableWhen", function (el, res) {
-            
+
             if (res) {
                 el.removeAttr('disabled');
             } else {
@@ -1798,7 +1799,76 @@ if (jQuery === undefined) {
 
         });
 
+
     })(a.PresenterConditionalsApp);
+
+
+    /*
+     * 
+     * 
+     * Another.PresenterPluginsApp
+     * 
+     * 
+     */
+    a.PresenterPluginsApp = a.CreateApplication("Another.PresenterPluginsApp");
+    (function (ap) {
+
+        // Presenter.Click
+        ap.AddPresenterPlugin("Click", function (selectors, opts, presenter) {
+
+            opts.Elements = [];
+            selectors.forEach(function (sl) {
+
+                var theEl = presenter.DomHelper(this);
+                if (theEl.length <= 0)
+                    theEl = presenter.DomHelper("<a />");
+                opts.Elements.push(theEl);
+                presenter.Container.on("click", sl, function (e) {
+
+                    e.preventDefault();
+                    opts.onClick(e, theEl);
+
+                });
+
+            });
+
+        });
+
+        // Presenter.Submit
+        ap.AddPresenterPlugin("Submit", function (selectors, opts, presenter) {
+
+            opts.Elements = [];
+            selectors.forEach(function (sl) {
+
+
+                var theForm = presenter.Container.find(sl);
+                if (theForm.length <= 0)
+                    theForm = presenter.DomHelper("<form />");
+                theForm.IsDirty = function () {
+                    return theForm.data("isDirty") === true;
+                };
+                opts.Elements.push(theForm);
+
+                theForm.each(function (i, chld) {
+                    var child = presenter.DomHelper(chld);
+                    child.change(function () {
+                        theForm.data("isDirty", true);
+                    });
+                });
+
+                presenter.Container.on("submit", sl, function (e) {
+
+                    e.preventDefault();
+                    opts.onSubmit(e, theForm);
+                    return false;
+
+                });
+
+            });
+
+        });
+
+    })(a.PresenterPluginsApp);
 
 })(Another);
 
