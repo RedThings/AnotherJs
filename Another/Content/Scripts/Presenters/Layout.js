@@ -32,7 +32,7 @@
         var svc = presenter.GetService("FormService");
         svc.GetData();
 
-        presenter.WhenClicked("#search_box");
+        
 
         presenter.BindRepeater({
             selector: "#repeater_data",

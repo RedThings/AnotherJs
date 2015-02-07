@@ -122,8 +122,6 @@ if (jQuery === undefined) {
     }
 
 
-
-
     /* 
      * 
      * 
@@ -207,9 +205,13 @@ if (jQuery === undefined) {
     }
 
 
-
-
-
+    /*
+     * 
+     * 
+     * Another.  (a.)
+     * 
+     * 
+     */
 
     // observable array
     // Adapted from http://www.bennadel.com/blog/2292-extending-javascript-arrays-while-keeping-native-bracket-notation-functionality.htm
@@ -667,7 +669,7 @@ if (jQuery === undefined) {
         this.firstBindingComplete = true;
     };
 
-    // presenter
+    // presenter class
     a.AnotherPresenter = function (name, model, container) {
 
         // this
@@ -749,21 +751,118 @@ if (jQuery === undefined) {
                     obj.selector.forEach(function (sl) {
                         els.push(ts.Container.find(sl));
                     });
-                }
-                else if (typeof obj.selector === "string") {
+                } else if (typeof obj.selector === "string") {
                     els.push(ts.Container.find(obj.selector));
                 }
 
                 // now loop
                 els.forEach(function (el) {
 
-                    var res = obj.boolCallback();
-                    obj.foundCallback(el, res);
-
+                    var res = false;
+                    if (typeof obj.boolCallback === "string") {
+                        eval("res = " + obj.boolCallback);
+                    } else {
+                        res = obj.boolCallback();
+                    }
+                    obj.conditional(el, res);
                 });
 
             });
         }
+
+        // run htmlWrappers
+        this.RunHtmlWrappers = function () {
+
+
+            /*
+             * RUN PLUGINS
+             * 
+             */
+            var innerCount = 0;
+            var innerKeys = Object.keys(a.PluginWrapper.prototype);
+            var innerFunc = function () {
+
+                var pluginName = innerKeys[innerCount];
+                if (pluginName !== "Presenter") {
+
+                    // lowercase the name
+                    var nmLower = pluginName.toLowerCase();
+
+                    // find els
+                    var els = ts.Container.find("[an-" + nmLower + "]");
+                    els.each(function (i, el) {
+
+                        // get element
+                        var jEl = ts.DomHelper(el);
+
+                        // iterate option keys and set from attributes
+                        var opts = {};
+                        a.DomHelper.each(el.attributes, function (ai, attr) {
+                            if (a.Helpers.StartsWith(attr.name, "an-" + nmLower)) {
+                                opts[attr.name.replace("an-" + nmLower + "-", "")] = attr.value;
+                            }
+                        });
+
+                        // find the plugin object in global list
+                        var foundPlugin = a.PresenterPlugins[pluginName];
+
+                        // set wrapperPropName in opts
+                        if (!(IsNullOrUndefined(foundPlugin.wrapperProp))) {
+                            opts[foundPlugin.wrapperProp] = jEl.attr("an-" + nmLower);
+                        }
+
+                        // call presenter.plugins[pluginName](el, opts)
+                        ts.Plugins[pluginName](el, opts);
+                    });
+
+                }
+
+                innerCount++;
+                if (innerCount < innerKeys.length) {
+                    innerFunc();
+                }
+
+            }
+            innerFunc();
+
+
+            /*
+             * 
+             * RUN CONDITIONALS
+             * 
+             */
+            innerCount = 0;
+            innerKeys = Object.keys(a.PresenterConditionals);
+            innerFunc = function () {
+
+                var condName = innerKeys[innerCount];
+                var nmLower = condName.toLowerCase();
+                var els = ts.Container.find("[an-" + nmLower + "]");
+                els.each(function (i, el) {
+
+                    // get element
+                    var jEl = ts.DomHelper(el);
+
+                    // find the plugin object in global list
+                    var foundPlugin = a.PresenterConditionals[condName];
+
+                    // eval
+                    var evalStr =
+                        "ts.Conditionals[condName](el, function () {" +
+                            "return ts.Model." + jEl.attr("an-" + nmLower) +
+                        "});";
+                    eval(evalStr);
+                });
+
+                innerCount++;
+                if (innerCount < innerKeys.length) {
+                    innerFunc();
+                }
+
+            }
+            innerFunc();
+
+        };
 
         // observes
         this.RunElObserves = function () {
@@ -960,10 +1059,10 @@ if (jQuery === undefined) {
         }
 
         // bind repeater controls
-        this.BindRepeaterControl = function (opts) {
+        this.BindRepeaterControl = function (slOrEl, opts) {
 
             // check
-            if (a.Helpers.StringIsNullOrEmpty(opts.selector) || a.Helpers.StringIsNullOrEmpty(opts.valueField) || a.Helpers.StringIsNullOrEmpty(opts.textField)) {
+            if (a.Helpers.StringIsNullOrEmpty(opts.valueField) || a.Helpers.StringIsNullOrEmpty(opts.textField)) {
                 throw new Error("BindRepeaterControl: options.selector, options.valueField and options.textField cannot be null or empty");
             }
 
@@ -972,14 +1071,13 @@ if (jQuery === undefined) {
                 ts.Bind(opts.data, function (newVal) {
 
                     opts.data = newVal;
-                    ts.BindRepeaterControl(opts);
+                    ts.BindRepeaterControl(slOrEl, opts);
 
                 });
-                var outputEl = ts.Element(opts.selector);
+                var outputEl = typeof slOrEl === "object" ? slOrEl : ts.Container.find(slOrEl);
                 if (outputEl.length < 1) outputEl = ts.DomHelper("<div />");
                 return outputEl;
-            }
-            else {
+            } else {
 
                 // get context
                 var contxt;
@@ -997,7 +1095,7 @@ if (jQuery === undefined) {
                 }
 
                 // get element
-                var el = ts.Element(opts.selector);
+                var el = typeof slOrEl === "object" ? slOrEl : ts.Container.find(slOrEl);
 
                 // check and mock if necessary
                 if (el.length <= 0)
@@ -1018,7 +1116,8 @@ if (jQuery === undefined) {
                             }
                             break;
                         }
-                    default: break;
+                    default:
+                        break;
                 }
 
                 // create children
@@ -1275,7 +1374,6 @@ if (jQuery === undefined) {
             if (ts.InnerObservers[theName] === undefined) {
 
 
-
                 // do via eval str
                 var outputString = "Object.observe(";
                 var modelString = "ts.Model";
@@ -1339,7 +1437,25 @@ if (jQuery === undefined) {
                 eval(str);
             }
         }
-    }
+
+        // plugins
+        this.Plugins = new a.PluginWrapper(ts);
+
+
+        // plugins
+        this.Conditionals = new a.ConditionalsWrapper(ts);
+
+    };
+
+    // plugin wrapper
+    a.PluginWrapper = function (presenter) {
+        this.Presenter = presenter;
+    };
+
+    // conditional wrapper
+    a.ConditionalsWrapper = function (presenter) {
+        this.Presenter = presenter;
+    };
 
     // application class
     a.AnotherApplication = function (appName) {
@@ -1442,27 +1558,19 @@ if (jQuery === undefined) {
 
             // callback
             a.PresenterConditionals[name] = callback;
-            a.AnotherPresenter.prototype[name] = function (selector, boolCallback) {
 
-                // self
-                var ts1 = this;
-
-                // find
-                var foundCallback = a.PresenterConditionals[name];
-                if (IsNullOrUndefined(foundCallback))
-                    throw new Error("PresenterConditional '" + name + "' does not exist.");
-
-                // add
-                ts1.PresenterConditionals.push({ name: name, selector: selector, boolCallback: boolCallback, foundCallback: foundCallback });
-
-            }
-
-            //
+            // 
             return ts;
+
         }
 
         // plugins
-        this.AddPresenterPlugin = function (name, callback) {
+        this.AddPresenterPlugin = function (name, wrapperProp, callback) {
+
+            if (typeof wrapperProp === "function") {
+                callback = wrapperProp;
+                wrapperProp = undefined;
+            }
 
             // check
             if (a.PresenterPlugins[name] !== undefined) {
@@ -1470,30 +1578,9 @@ if (jQuery === undefined) {
             }
 
             // callback
-            a.PresenterPlugins[name] = callback;
-
-            // add to presenter proto
-            a.AnotherPresenter.prototype[name] = function (selector, opts) {
-
-                // self
-                var ts1 = this;
-
-                // find
-                var plugin = a.PresenterPlugins[name];
-                if (IsNullOrUndefined(plugin))
-                    throw new Error("PresenterPlugin '" + name + "' does not exist.");
-
-
-                // run!
-                var selectors;
-                if (a.Helpers.IsArray(selector)) {
-                    selectors = selector;
-                } else {
-                    selectors = [selector];
-                }
-                plugin(selectors, opts, ts1);
-
-            }
+            a.PresenterPlugins[name] = {
+                wrapperProp: wrapperProp, callback: callback
+            };
 
             //
             return ts;
@@ -1541,9 +1628,16 @@ if (jQuery === undefined) {
         a.RaiseEvent("OnPresenterInitializing", presenterObj);
 
         // found so initialize
-        var model = {};
+        var model = {
+            Ui: {},
+            Form: {},
+            Data: {}
+        };
         var presenter = new a.AnotherPresenter(name, model, container);
         presenter.SetObserve();
+        presenter.ObserveInnerObject("Ui");
+        presenter.ObserveInnerObject("Form");
+        presenter.ObserveInnerObject("Data");
 
         if (IsNullOrUndefined(arrayOfParams) || arrayOfParams.IsNullOrEmpty()) {
             presenterObj(presenter);
@@ -1562,8 +1656,12 @@ if (jQuery === undefined) {
         // observes
         presenter.RunElObserves();
 
+        // run htmlWrappers
+        presenter.RunHtmlWrappers();
+
         // run conditionals
         presenter.RunConditionals();
+
 
         // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);
@@ -1770,6 +1868,73 @@ if (jQuery === undefined) {
     // kick the whole thing off!
     a.Initialize = function (callback) {
 
+        // add plugins
+        var addPluginCounter = 0;
+        var pluginKeys = Object.keys(a.PresenterPlugins);
+        var addPlugins = function () {
+
+            var nm = pluginKeys[addPluginCounter];
+            var plugin = a.PresenterPlugins[nm];
+            a.PluginWrapper.prototype[nm] = function (selector, opts) {
+
+                // plugins
+                if (IsNullOrUndefined(plugin))
+                    throw new Error("PresenterPlugin '" + nm + "' does not exist.");
+
+                // sort out selectors!
+                var selectors;
+                if (a.Helpers.IsArray(selector)) {
+                    selectors = selector; // array of strings or elements
+                } else {
+                    selectors = [selector]; // string or element
+                }
+
+                // go!
+                plugin.callback(selectors, opts, this.Presenter);
+
+            }
+            addPluginCounter++;
+            if (addPluginCounter < pluginKeys.length) {
+                addPlugins();
+            }
+
+        };
+        if (pluginKeys.length > 0) {
+            addPlugins();
+        }
+
+        // add conditionals
+        var addCondCounter = 0;
+        var condKeys = Object.keys(a.PresenterConditionals);
+        var addConditionals = function () {
+
+            //
+            var cd = condKeys[addCondCounter];
+
+            // find
+            var conditional = a.PresenterConditionals[cd];
+
+            // find
+            var foundCallback = a.PresenterConditionals[cd];
+            if (IsNullOrUndefined(foundCallback))
+                throw new Error("PresenterConditional '" + cd + "' does not exist.");
+
+            a.ConditionalsWrapper.prototype[cd] = function (sl, boolCallback) {
+
+                // add
+                this.Presenter.PresenterConditionals.push({ name: cd, selector: sl, boolCallback: boolCallback, conditional: conditional });
+            }
+
+            addCondCounter++;
+            if (addCondCounter < condKeys.length) {
+                addConditionals();
+            }
+
+        };
+        if (condKeys.length > 0) {
+            addConditionals();
+        }
+
         // go
         a.DomHelper(window).load(function (e) {
 
@@ -1805,12 +1970,11 @@ if (jQuery === undefined) {
     };
 
 
-
     /*
-     * 
-     * Another.Dependencies
-     * 
-     */
+         * 
+         * Another.Dependencies
+         * 
+         */
 
     // create dependencies app
     a.DependenciesApplication = a.CreateApplication("Another.Dependencies");
@@ -1876,7 +2040,7 @@ if (jQuery === undefined) {
     (function (ac) {
 
         // show when
-        ac.AddPresenterConditional("ShowWhen", function (el, res) {
+        ac.AddPresenterConditional("Show", function (el, res) {
 
             if (res) {
                 el.show();
@@ -1887,7 +2051,7 @@ if (jQuery === undefined) {
         });
 
         // enable when
-        ac.AddPresenterConditional("EnableWhen", function (el, res) {
+        ac.AddPresenterConditional("Enable", function (el, res) {
 
             if (res) {
                 el.removeAttr('disabled');
@@ -1912,15 +2076,27 @@ if (jQuery === undefined) {
     (function (ap) {
 
         // Presenter.Click
-        ap.AddPresenterPlugin("Click", function (selectors, opts, presenter) {
+        ap.AddPresenterPlugin("Click", "onClick", function (selectors, opts, presenter) {
 
-            opts.Elements = [];
+            opts.elements = [];
             selectors.forEach(function (sl) {
 
-                var theEl = presenter.DomHelper(this);
+                var theEl = typeof sl === "object" ? sl : presenter.Container.find(sl);
+                if (theEl.jquery === undefined)
+                    theEl = a.DomHelper(theEl);
                 if (theEl.length <= 0)
                     theEl = presenter.DomHelper("<a />");
-                opts.Elements.push(theEl);
+                opts.elements.push(theEl);
+
+                // check if string
+                if (typeof opts.onClick === "string") {
+                    eval(
+                    "opts.onClick = function(xx,yy){" +
+                       "presenter." + opts.onClick +
+                    "}");
+                }
+
+                // on click
                 presenter.Container.on("click", sl, function (e) {
 
                     e.preventDefault();
@@ -1933,26 +2109,35 @@ if (jQuery === undefined) {
         });
 
         // Presenter.Submit
-        ap.AddPresenterPlugin("Submit", function (selectors, opts, presenter) {
+        ap.AddPresenterPlugin("Submit", "onSubmit", function (selectors, opts, presenter) {
 
-            opts.Elements = [];
+            opts.elements = [];
             selectors.forEach(function (sl) {
 
-
-                var theForm = presenter.Container.find(sl);
+                
+                var theForm = typeof sl === "object" ? presenter.DomHelper(sl) : presenter.Container.find(sl);
+                if (theForm.jquery === undefined)
+                    theForm = a.DomHelper(theForm);
                 if (theForm.length <= 0)
                     theForm = presenter.DomHelper("<form />");
                 theForm.IsDirty = function () {
                     return theForm.data("isDirty") === true;
                 };
-                opts.Elements.push(theForm);
-
+                opts.elements.push(theForm);
                 theForm.each(function (i, chld) {
                     var child = presenter.DomHelper(chld);
                     child.change(function () {
                         theForm.data("isDirty", true);
                     });
                 });
+
+                // check if string
+                if (typeof opts.onSubmit === "string") {
+                    eval(
+                    "opts.onSubmit = function(xx,yy){" +
+                       "presenter." + opts.onSubmit +
+                    "}");
+                }
 
                 presenter.Container.on("submit", sl, function (e) {
 
@@ -1965,6 +2150,33 @@ if (jQuery === undefined) {
             });
 
         });
+
+        // BindRepeaterControl
+        ap.AddPresenterPlugin("Repeater", "data", function (selectors, opts, presenter) {
+
+            opts.elements = [];
+            selectors.forEach(function (sl) {
+
+                var theEl = typeof sl === "object" ? sl : presenter.Container.find(sl);
+                if (theEl.jquery === undefined)
+                    theEl = a.DomHelper(theEl);
+                opts.elements.push(theEl);
+                presenter.BindRepeaterControl(theEl, {
+                    type: opts.type,
+                    multi: opts.multi,
+                    model: opts.model,
+                    data: opts.data,
+                    valueField: opts.valueField,
+                    textField: opts.textField,
+                    controlClass: opts.controlClass,
+                    labelClass: opts.labelClass,
+                    onChange: opts.onChange
+                });
+
+            });
+
+        });
+
 
     })(a.PresenterPluginsApp);
 

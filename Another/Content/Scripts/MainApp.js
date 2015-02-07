@@ -28,18 +28,6 @@ var mainApp = Another.CreateApplication("Main");
 
         });
 
-        // add element
-        Another.AnotherPresenter.prototype.WhenClicked = function (selector) {
-
-            var el = this.Element(selector);
-            el.click(function (e) {
-                e.preventDefault();
-                alert("You clicked me");
-            });
-
-
-        };
-
         // configure routing
         app.ConfigureRoutes("section#main", function (builder) {
 
