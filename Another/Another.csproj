@@ -59,93 +59,21 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="AnotherJs\Another.jQueryUi.js" />
-    <Content Include="AnotherJs\Another.jQueryUi.min.js">
-      <DependentUpon>Another.jQueryUi.js</DependentUpon>
-    </Content>
-    <Content Include="AnotherJs\Another.min.js">
-      <DependentUpon>Another.js</DependentUpon>
-    </Content>
-    <Content Include="AnotherJs\Another.Routing.min.js">
-      <DependentUpon>Another.Routing.js</DependentUpon>
-    </Content>
-    <Content Include="Content\Css\site.css" />
-    <Content Include="Content\custom-theme\images\ui-bg_flat_0_999999_40x100.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_flat_0_aaaaaa_40x100.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_glass_55_fbf9ee_1x400.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_glass_65_ffffff_1x400.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_glass_75_dadada_1x400.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_glass_75_e6e6e6_1x400.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_glass_75_ffffff_1x400.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_highlight-soft_75_cccccc_1x100.png" />
-    <Content Include="Content\custom-theme\images\ui-bg_inset-soft_95_fef1ec_1x100.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_222222_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_2e83ff_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_428bca_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_454545_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_555555_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_888888_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_999999_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_cd0a0a_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_f0ad4e_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_f6cf3b_256x240.png" />
-    <Content Include="Content\custom-theme\images\ui-icons_ffffff_256x240.png" />
-    <Content Include="Content\custom-theme\jquery-ui-1.10.3.custom.css" />
-    <Content Include="Content\custom-theme\jquery-ui-1.10.3.theme.css" />
-    <Content Include="Content\custom-theme\jquery.ui.1.10.3.ie.css" />
-    <Content Include="Content\Images\scary1.png" />
-    <Content Include="Content\Scripts\Presenters\Others.js" />
-    <Content Include="Content\Scripts\Presenters\Person.js" />
-    <Content Include="jquery-ui-1.11.2.custom\external\jquery\jquery.js" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_flat_0_aaaaaa_40x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_flat_0_eeeeee_40x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_flat_55_ffffff_40x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_flat_75_ffffff_40x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_glass_65_ffffff_1x400.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_highlight-soft_100_f6f6f6_1x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_highlight-soft_25_0073ea_1x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-bg_highlight-soft_50_dddddd_1x100.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-icons_0073ea_256x240.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-icons_454545_256x240.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-icons_666666_256x240.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-icons_ff0084_256x240.png" />
-    <Content Include="jquery-ui-1.11.2.custom\images\ui-icons_ffffff_256x240.png" />
-    <Content Include="jquery-ui-1.11.2.custom\index.html" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.css" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.js" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.min.css" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.min.js" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.structure.css" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.structure.min.css" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.theme.css" />
-    <Content Include="jquery-ui-1.11.2.custom\jquery-ui.theme.min.css" />
-    <Content Include="Json\test.json" />
-    <Content Include="AnotherJs\Another.min.js.map">
-      <DependentUpon>Another.min.js</DependentUpon>
-    </Content>
-    <Content Include="AnotherJs\Another.Routing.min.js.map">
-      <DependentUpon>Another.Routing.min.js</DependentUpon>
-    </Content>
-    <Content Include="AnotherJs\Another.jQueryUi.min.js.map">
-      <DependentUpon>Another.jQueryUi.min.js</DependentUpon>
-    </Content>
-    <None Include="Web.Debug.config">
-      <DependentUpon>Web.config</DependentUpon>
-    </None>
-    <None Include="Web.Release.config">
-      <DependentUpon>Web.config</DependentUpon>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="AnotherJs\Another.js" />
-    <Content Include="AnotherJs\Another.Routing.js" />
+    <Content Include="AnotherJs\Splits\05. Application.js" />
+    <Content Include="AnotherJs\Splits\02. Init.js" />
+    <Content Include="AnotherJs\Splits\01. ObjectObserve.js" />
+    <Content Include="AnotherJs\Splits\08. ObservableArray.js" />
+    <Content Include="AnotherJs\Splits\06. Presenter.js" />
+    <Content Include="AnotherJs\Splits\07. Wrappers.js" />
+    <Content Include="AnotherJs\Splits\10. ServicesAndDependencies.Js" />
+    <Content Include="AnotherJs\Splits\12. Conditionals.js" />
+    <Content Include="Content\An\Apps\AnotherDemosApp.js" />
+    <Content Include="Content\An\Presenters\PersonGridEdit.js" />
     <Content Include="Content\bootstrap-theme.css" />
     <Content Include="Content\bootstrap-theme.min.css" />
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
-    <Content Include="Content\Scripts\MainApp.js" />
-    <Content Include="Content\Scripts\Presenters\Layout.js" />
-    <Content Include="Content\Scripts\Services\Services.js" />
+    <Content Include="Demos\PersonGridEdit.html" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Index.html" />
     <Content Include="packages.config" />
@@ -154,24 +82,27 @@
     <Content Include="fonts\glyphicons-halflings-regular.eot" />
     <Content Include="Content\bootstrap-theme.css.map" />
     <Content Include="Content\bootstrap.css.map" />
+    <Content Include="AnotherJs\Splits\03. Helpers.js" />
+    <Content Include="AnotherJs\Splits\04. Core.js" />
+    <Content Include="AnotherJs\Splits\09. Events.js" />
+    <Content Include="AnotherJs\Splits\11. CoreDependencies.js" />
+    <Content Include="AnotherJs\Splits\13. Plugins.js" />
     <None Include="Scripts\jquery-2.1.3.intellisense.js" />
-    <Content Include="AnotherJs\Tests\AnotherTests.js" />
-    <Content Include="QUnit\qunit-1.17.1.css" />
-    <Content Include="QUnit\qunit-1.17.1.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="Scripts\jquery-2.1.3.js" />
     <Content Include="Scripts\jquery-2.1.3.min.js" />
     <Content Include="Scripts\npm.js" />
-    <Content Include="Testing.html" />
-    <Content Include="Views\Home\About.html" />
-    <Content Include="Views\Home\Index.html" />
-    <Content Include="Views\Person\Index.html" />
-    <Content Include="Views\Person\Create.html" />
-    <Content Include="Views\Person\Read.html" />
-    <Content Include="Views\Person\Update.html" />
-    <Content Include="Web.config" />
     <Content Include="Scripts\jquery-2.1.3.min.map" />
+    <None Include="Web.Debug.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+    <None Include="Web.Release.config">
+      <DependentUpon>Web.config</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />

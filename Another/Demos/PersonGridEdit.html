@@ -1,0 +1,48 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>AnotherJs > Demos > Person Grid Edit</title>
+</head>
+<body>
+    <h2>Person Grid Edit</h2>
+    <table an-presenter="PersonGridEdit1">
+        <tr an-repeater="row in {Data}.Persons">
+            <td>{{ row.Id }}</td>
+            <td><span an-model="row.Name"></span></td>
+        </tr>
+    </table>
+    
+    <table id="person_grid_edit">
+        <tr id="person_grid_row"></tr>
+    </table>
+    
+    <!-- jQuery -->
+    <script src="../Scripts/jquery-2.1.3.js"></script>
+
+    <!-- SPLITS -->
+    <script src="../AnotherJs/Splits/01. ObjectObserve.js"></script>
+    <script src="../AnotherJs/Splits/02. Init.js"></script>
+    <script src="../AnotherJs/Splits/03. Helpers.js"></script>
+    <script src="../AnotherJs/Splits/04. Core.js"></script>
+    <script src="../AnotherJs/Splits/05. Application.js"></script>
+    <script src="../AnotherJs/Splits/06. Presenter.js"></script>
+    <script src="../AnotherJs/Splits/07. Wrappers.js"></script>
+    <script src="../AnotherJs/Splits/08. ObservableArray.js"></script>
+    <script src="../AnotherJs/Splits/09. Events.js"></script>
+    <script src="../AnotherJs/Splits/10. ServicesAndDependencies.Js"></script>
+    <script src="../AnotherJs/Splits/11. CoreDependencies.js"></script>
+    <script src="../AnotherJs/Splits/12. Conditionals.js"></script>
+    <script src="../AnotherJs/Splits/13. Plugins.js"></script>
+
+    <!--APPS-->
+    <script src="../Content/An/Apps/AnotherDemosApp.js"></script>
+
+    <!-- PRESENTERS -->
+    <script src="../Content/An/Presenters/PersonGridEdit.js"></script>
+    
+    <!-- INIT -->
+    <script>
+        Another.Initialize();
+    </script>
+</body>
+</html>
