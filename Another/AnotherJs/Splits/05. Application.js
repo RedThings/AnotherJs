@@ -19,23 +19,43 @@
             return true;
         }
 
-        // config
-        this.Configurations = [];
+        // pre config
+        this.OnApplicationStarts = [];
 
         // configure
-        this.Configure = function (func) {
-            if (a.Helpers.IsFunc(func)) {
-                ts.Configurations.push(func);
+        this.OnApplicationStart = function (func) {
+            if (a.IsFunc(func)) {
+                ts.OnApplicationStarts.push(func);
+            }
+        }
+
+        // config
+        this.OnApplicationConfigures = [];
+
+        // configure
+        this.OnApplicationConfigure = function (func) {
+            if (a.IsFunc(func)) {
+                ts.OnApplicationConfigures.push(func);
             }
         };
 
         // runs
-        this.Runs = [];
+        this.OnApplicationRuns = [];
 
         // run
-        this.Run = function (func) {
-            if (a.Helpers.IsFunc(func)) {
-                this.Runs.push(func);
+        this.OnApplicationRun = function (func) {
+            if (a.IsFunc(func)) {
+                this.OnApplicationRuns.push(func);
+            }
+        }
+
+        // ends
+        this.OnApplicationEnds = [];
+
+        // end
+        this.OnApplicationEnd = function (func) {
+            if (a.IsFunc(func)) {
+                this.OnApplicationEnds.push(func);
             }
         }
 

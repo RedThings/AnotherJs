@@ -7,7 +7,7 @@
 
         // show when
         ac.AddPresenterConditional("Show", function (el, res) {
-            debugger;
+
             if (res) {
                 el.show();
             } else {
@@ -18,13 +18,11 @@
 
         // enable when
         ac.AddPresenterConditional("Enable", function (el, res) {
-
             if (res) {
                 el.removeAttr('disabled');
             } else {
                 el.attr('disabled', 'disabled');
             }
-
         });
 
 

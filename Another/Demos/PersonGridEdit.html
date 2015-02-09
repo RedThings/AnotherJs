@@ -5,17 +5,37 @@
 </head>
 <body>
     <h2>Person Grid Edit</h2>
-    <table an-presenter="PersonGridEdit1">
-        <tr an-repeater="row in {Data}.Persons">
-            <td>{{ row.Id }}</td>
-            <td><span an-model="row.Name"></span></td>
-        </tr>
-    </table>
-    
-    <table id="person_grid_edit">
-        <tr id="person_grid_row"></tr>
-    </table>
-    
+
+    <div an-presenter="PersonGridEdit1">
+        <h3>HtmlWrapper</h3>
+        <table>
+            <tr an-repeater="row in {Data}.Persons">
+                <td an-model="row.Id"></td>
+                <td><span an-model="row.Name"></span></td>
+            </tr>
+        </table>
+        <form an-submit="{Presenter}.SubmitForm(e, el)">
+            <button type="button" an-click="{Presenter}.ClickMe(e, el)">Click</button>
+            <button type="submit">Submit</button>
+            <button type="button" an-iftext="{Ui}.ShowSomething ? 'Hide':'Show'" an-click="{Ui}.ShowSomething = !{Ui}.ShowSomething"></button>
+            <h1 an-show="{Ui}.ShowSomething">I'M SHOWN</h1>
+        </form>
+    </div>
+    <hr />
+    <div id="person_grid_edit">
+        <h3>JS only</h3>
+        <table>
+            <tr id="person_grid_row"></tr>
+        </table>
+        <form id="the_form">
+            <button type="button" id="btnClick">Click</button>
+            <button type="submit" id="btnSubmit">Submit</button>
+            <button type="button" id="btnShowHide"></button>
+            <h1 id="h1Shown">I'M SHOWN</h1>
+        </form>
+
+    </div>
+
     <!-- jQuery -->
     <script src="../Scripts/jquery-2.1.3.js"></script>
 
@@ -39,7 +59,7 @@
 
     <!-- PRESENTERS -->
     <script src="../Content/An/Presenters/PersonGridEdit.js"></script>
-    
+
     <!-- INIT -->
     <script>
         Another.Initialize();

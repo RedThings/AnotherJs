@@ -33,7 +33,7 @@
 
     // create event
     a.CreateEvent = function (name) {
-        if (a.Helpers.IsUndefinedOrNull(a.Events[name])) {
+        if (a.IsUndefinedOrNull(a.Events[name])) {
 
             a.Events[name] = {
                 Subscribers: []

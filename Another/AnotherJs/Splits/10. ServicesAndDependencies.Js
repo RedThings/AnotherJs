@@ -11,12 +11,12 @@
     // create service
     a.AddService = function (name, type, deps, svc) {
 
-        if (a.Helpers.IsUndefinedOrNull(deps)) {
+        if (a.IsUndefinedOrNull(deps)) {
             svc = deps;
             deps = undefined;
         }
 
-        if (a.Helpers.IsUndefinedOrNull(name) || a.Helpers.IsUndefinedOrNull(svc) || a.Helpers.IsUndefinedOrNull(type) || type.IsNullOrEmpty() || name.IsNullOrEmpty() || !a.Helpers.IsFunc(svc))
+        if (a.IsUndefinedOrNull(name) || a.IsUndefinedOrNull(svc) || a.IsUndefinedOrNull(type) || a.StringIsNullOrEmpty(type) || a.StringIsNullOrEmpty(name) || !a.IsFunc(svc))
             throw ("AddService: name, type and svc must be strings and a function respectively");
         if (a.Services[name] !== undefined)
             throw ("AddService: service '" + name + "' already exists");
@@ -28,7 +28,7 @@
     a.GetService = function (svcName) {
 
         var svc = a.Services[svcName];
-        if (a.Helpers.IsUndefinedOrNull(svc))
+        if (a.IsUndefinedOrNull(svc))
             throw ("Cannot find service '" + svcName + "'");
 
         // try static
@@ -84,12 +84,12 @@
 
     // add depenency
     a.AddDependency = function (name, type, deps, dep) {
-        if (a.Helpers.IsUndefinedOrNull(dep)) {
+        if (a.IsUndefinedOrNull(dep)) {
             dep = deps;
             deps = [];
         }
 
-        if (a.Helpers.IsUndefinedOrNull(name) || a.Helpers.IsUndefinedOrNull(type) || name.IsNullOrEmpty() || type.IsNullOrEmpty() || !a.Helpers.IsFunc(dep))
+        if (a.IsUndefinedOrNull(name) || a.IsUndefinedOrNull(type) || a.StringIsNullOrEmpty(type) || a.StringIsNullOrEmpty(name) || !a.IsFunc(dep))
             throw ("AddDependency: name and type must be a string and dep must be a function");
         if (a.Dependencies[name] !== undefined)
             throw ("AddDependency: dependency '" + name + "' already exists");
@@ -100,7 +100,7 @@
     // get dependency
     a.GetDependency = function (dep) {
         var output = a.Dependencies[dep];
-        if (a.Helpers.IsUndefinedOrNull(output))
+        if (a.IsUndefinedOrNull(output))
             throw ("GetDependency: '' is not a dependency");
 
         // check static

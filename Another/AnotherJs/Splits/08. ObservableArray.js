@@ -144,9 +144,10 @@
             // push
             push: function (value) {
                 Array.prototype.push.call(this, value);
-                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                    rpt.AddNewElement(value);
-                });
+                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                //    rpt.AddNewElement(value);
+                //});
+                throw  new Error("Change something in repeater?");
                 this.fireChange();
                 return this;
             },
@@ -154,9 +155,10 @@
             // pop
             pop: function () {
                 Array.prototype.pop.call(this);
-                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                    rpt.RemoveLastElement();
-                });
+                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                //    rpt.RemoveLastElement();
+                //});
+                throw new Error("Change something in repeater?");
                 this.fireChange();
                 return this;
             },
@@ -164,9 +166,10 @@
             // reverse
             reverse: function () {
                 Array.prototype.reverse.call(this);
-                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                    rpt.ReverseElements();
-                });
+                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                //    rpt.ReverseElements();
+                //});
+                throw new Error("Change something in repeater?");
                 this.fireChange();
                 return this;
             },
@@ -174,7 +177,6 @@
             // slice
             slice: function (start, end) {
                 var output = Array.prototype.slice.call(this, start, end);
-                //this.fireChange();
                 return output;
             },
 
@@ -188,13 +190,14 @@
                     Array.prototype.splice.call(this, strt, 0, theVal);
                     strt++;
                 }
-                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                    if (strt === undefined) {
-                        rpt.RemoveAllElements();
-                    } else {
-                        rpt.SpliceElements(args);
-                    }
-                });
+                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                //    if (strt === undefined) {
+                //        rpt.RemoveAllElements();
+                //    } else {
+                //        rpt.SpliceElements(args);
+                //    }
+                //});
+                throw new Error("Change something in repeater?");
                 this.fireChange();
                 return this;
             },
@@ -207,9 +210,10 @@
             // shift
             shift: function () {
                 var output = Array.prototype.shift.call(this);
-                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                    rpt.RemoveFirstElement();
-                });
+                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                //    rpt.RemoveFirstElement();
+                //});
+                throw new Error("Change something in repeater?");
                 this.fireChange();
                 return output;
             },
@@ -222,9 +226,10 @@
                     var theVal = args[countr];
                     Array.prototype.splice.call(this, 0, 0, theVal);
                 }
-                ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                    rpt.AddElementsInFront(args);
-                });
+                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
+                //    rpt.AddElementsInFront(args);
+                //});
+                throw new Error("Change something in repeater?");
                 this.fireChange();
                 return this;
             },
@@ -234,46 +239,47 @@
                 return "Another.ObservableArray";
             },
 
-            // set observables
-            setObservables: function (parentObj, childObjName, theObservables, fullName) {
-                this.parentObj = parentObj;
-                this.childObjName = childObjName;
-                this.observables = theObservables;
-                this.fullName = fullName;
-            },
+            //// set observables
+            //setObservables: function (parentObj, childObjName, theObservables, fullName) {
+            //    this.parentObj = parentObj;
+            //    this.childObjName = childObjName;
+            //    this.observables = theObservables;
+            //    this.fullName = fullName;
+            //},
 
             // fire change
             fireChange: function () {
 
-                // self
-                var self = this;
-                var theValue = self;
+                //// self
+                //var self = this;
+                //var theValue = self;
 
-                // find in observables
-                var found = a._getObservable(this.observables, this.fullName);
+                //// find in observables
+                //var found = a._getObservable(this.observables, this.fullName);
 
-                // check
-                if (found.length > 0) {
-                    found.forEach(function (f) {
+                //// check
+                //if (found.length > 0) {
+                //    found.forEach(function (f) {
 
-                        a._checkAndFireFromObservable(self.parentObj, f, self.childObjName, theValue);
+                //        a._checkAndFireFromObservable(self.parentObj, f, self.childObjName, theValue);
 
-                    });
-                }
+                //    });
+                //}
+                throw new Error("Fire change in repeater?");
 
             },
 
-            // set repeater
-            setRepeater: function (rpt) {
-                this.repeater = rpt;
-            },
+            //// set repeater
+            //setRepeater: function (rpt) {
+            //    this.repeater = rpt;
+            //},
 
-            // check repeater
-            checkRepeater: function (func) {
-                if (!a.Helpers.IsUndefinedOrNull(this.repeater) && a.Helpers.IsFunc(func)) {
-                    func(this.repeater);
-                }
-            }
+            //// check repeater
+            //checkRepeater: function (func) {
+            //    if (!a.IsUndefinedOrNull(this.repeater) && a.IsFunc(func)) {
+            //        func(this.repeater);
+            //    }
+            //}
 
 
         };
@@ -291,26 +297,23 @@
 
     }).call({});
     
-    // convert
-    a.ConvertToObservableArray = function (theValue, parentObj, childObjName, theObservables, fullName) {
+    //// convert
+    //a.ConvertToObservableArray = function (theValue, parentObj, childObjName, theObservables, fullName) {
 
-        if (!a.ShouldBeObservableArray(theValue)) {
-            return theValue;
-        }
-        if (a.Helpers.IsUndefinedOrNull(fullName) || fullName.IsNullOrEmpty())
-            throw new Error("ConverToObservable final parameter is full graph name preceding the property name eg 'Level1.Leve2.'");
-        var oArray = new a.ObservableArray();
-        oArray.setObservables(parentObj, childObjName, theObservables, fullName);
-        theValue.forEach(function (v) {
-            oArray.pushNoFire(v);
-        });
-        return oArray;
+    //    if (!a.ShouldBeObservableArray(theValue)) {
+    //        return theValue;
+    //    }
+    //    if (a.IsUndefinedOrNull(fullName) || fullName.IsNullOrEmpty())
+    //        throw new Error("ConverToObservable final parameter is full graph name preceding the property name eg 'Level1.Leve2.'");
+    //    var oArray = new a.ObservableArray();
+    //    oArray.setObservables(parentObj, childObjName, theObservables, fullName);
+    //    theValue.forEach(function (v) {
+    //        oArray.pushNoFire(v);
+    //    });
+    //    return oArray;
 
-    };
+    //};
 
-    // should be
-    a.ShouldBeObservableArray = function (obj) {
-        return a.Helpers.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
-    }
+    
 
 })(Another);

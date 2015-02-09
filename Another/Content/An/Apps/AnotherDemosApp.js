@@ -2,27 +2,23 @@
 
 var AnotherDemosApp = Another.CreateApplication("AnotherDemosApp");
 
-(function(app) {
+(function(app,a) {
 
-    app.Configure(function() {
-        
-        // on error
+    app.OnApplicationStart(function () { "App start"; });
+    app.OnApplicationConfigure(function () {
+        "App configure"; // on error
         app.OnError(function (err) {
-            var outputStr = Another.Helpers.FormatString(
+            var outputStr = a.FormatString(
                 "Error at line {0}, col {1} of {2} - '{3}' ",
                 [err.lineNumber, err.columnNumber, err.fileName, err.message]);
             console.log(outputStr);
             console.log(err);
 
         });
-
     });
-
-    app.Run(function() {
-
-        // on error
+    app.OnApplicationRun(function () {
+        "App run"; 
         app.InitializePresenter("PersonGridEdit2", "#person_grid_edit");
-
     });
 
-})(AnotherDemosApp);
+})(AnotherDemosApp,Another);

@@ -3,7 +3,7 @@
 // closure
 (function(a) {
 
-    if (!a.Helpers.StartsWith(jQuery.fn.jquery, "2.")) {
+    if (!a.StartsWith(jQuery.fn.jquery, "2.")) {
         throw new Error("Another currently uses jQuery v2.x as a dom helper");
     }
 
@@ -14,113 +14,20 @@
         return app;
     };
 
+    // dom helper
+    a.DomHelper = jQuery;
+
     // applications bucket
     a.Applications = [];
 
     // presenter callbacks
     a.Presenters = {};
 
-    // check and fire
-    a._checkAndFireFromObservable = function(context, fnd, newValName, theValue) {
+    // conditionals
+    a.PresenterConditionals = {};
 
-        // check
-        if (fnd.Elements !== undefined && fnd.Elements !== null && fnd.Elements.length > 0) {
-
-            fnd.Elements.forEach(function(el) {
-
-                if (el.length > 0) {
-
-                    // switch type
-                    switch (el[0].tagName) {
-
-                    case "INPUT":
-                    case "TEXTAREA":
-                    {
-                        doElementChange(el, context, newValName, theValue, "keyup");
-                        break;
-                    }
-                    case "SELECT":
-                    {
-                        doElementChange(el, context, newValName, theValue, "change");
-                        break;
-                    }
-                    default:
-                        el.html(theValue);
-                        break;
-                    }
-
-
-                }
-            });
-
-        }
-
-        if (a.Helpers.IsFunc(fnd.Callback)) {
-            fnd.Callback(theValue, context);
-        }
-
-    }
-
-    // do text input or element change change
-    a._doElementChange = function(el, context, newValName, theValue, evName) {
-
-        if (el.data("an_change") === undefined) {
-
-            el.data("an_change", true);
-
-            el.bind(evName, function(e) {
-                el.data("change_from_element", true);
-                context[newValName] = el.val();
-            });
-
-        }
-
-        if (el.data("change_from_element") === true) {
-            el.data("change_from_element", false);
-        } else {
-            el.val(theValue);
-        }
-
-    }
-
-    // get observable
-    a._getObservable = function(obs, name) {
-
-        var found = obs.filter(function(o) {
-            return o.PropName === name;
-        });
-
-        return found;
-
-    }
-
-    // get names
-    a.GetParentName = function(str, noModel) {
-        var nm = a.GetFullName(str);
-        var splt = nm.split(".");
-        splt.pop();
-        return noModel ? splt.join(".").replace("Model.","") : splt.join(".");
-    }
-    a.GetChildName = function(str) {
-        var nm = a.GetFullName(str);
-        var splt = nm.split(".");
-        return splt[splt.length - 1];
-    }
-    a.GetFullName = function(str) {
-        return str
-            .replace("{Model}.", "Model.")
-            .replace("{Ui}.", "Model.Ui.")
-            .replace("{Data}.", "Model.Data.")
-            .replace("{Form}.", "Model.Form.")
-            .replace("{Model}.", "Model.");
-        ;
-    }
-
-    // dom helper
-    a.DomHelper = jQuery;
-
-    // wrappers
-    a.RepeaterWrappers = {};
+    // plugins
+    a.PresenterPlugins = {};
 
     // Initialize presenter
     a.InitializePresenter = function (name, container, arrayOfParams, callback) {
@@ -129,10 +36,12 @@
             callback = arrayOfParams;
             arrayOfParams = undefined;
         }
+
         if (typeof container === "string") {
             container = a.DomHelper(container);
         }
-        if (a.Helpers.IsUndefinedOrNull(container) || container.length < 1) container = a.DomHelper("<div />");
+
+        if (a.IsUndefinedOrNull(container) || container.length < 1) container = a.DomHelper("<div />");
 
 
         // 
@@ -142,8 +51,8 @@
         var presenterObj = a.Presenters[name];
 
         // check
-        if (a.Helpers.IsUndefinedOrNull(presenterObj))
-            throw new Error ("Initialize Presenter: Cannot find presenter '" + name + "'");
+        if (a.IsUndefinedOrNull(presenterObj))
+            throw new Error("Initialize Presenter: Cannot find presenter '" + name + "'");
 
         a.RaiseEvent("OnPresenterInitializing", presenterObj);
 
@@ -154,13 +63,11 @@
             Data: {}
         };
         var presenter = new a.AnotherPresenter(name, model, container);
-        presenter.SetObserve();
-        presenter.ObserveInnerObject("Ui");
-        presenter.ObserveInnerObject("Form");
-        presenter.ObserveInnerObject("Data");
+        presenter.Observe("{Model}");
 
-        if (a.Helpers.IsUndefinedOrNull(arrayOfParams) || arrayOfParams.IsNullOrEmpty()) {
+        if (a.IsUndefinedOrNull(arrayOfParams) || arrayOfParams.IsNullOrEmpty()) {
             presenterObj(presenter);
+
         } else {
             var str = "pCallback(presenter,";
             for (var i = 0; i < arrayOfParams.length; i++) {
@@ -173,20 +80,20 @@
             eval(str);
         }
 
-        // run htmlWrappers
-        presenter.RunHtmlWrappers();
 
-        // observes
-        presenter.RunElObserves();
 
-        // run conditionals
+        // intialize dom
+        presenter.InitializeDom(presenter.Container);
+        
+        // run conditionals for first time
         presenter.RunConditionals();
 
         // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);
 
         // callbacks
-        if (a.Helpers.IsFunc(callback)) {
+        if (a.IsFunc(callback)) {
+            // ReSharper disable once InvokedExpressionMaybeNonFunction
             callback(presenter);
         }
 
@@ -194,16 +101,10 @@
         return presenter;
     }
 
-    // conditionals
-    a.PresenterConditionals = {};
-
-    // plugins
-    a.PresenterPlugins = {};
-
     // kick the whole thing off!
     a.Initialize = function (callback) {
 
-        // add plugins
+        // add plugins to prototype
         var addPluginCounter = 0;
         var pluginKeys = Object.keys(a.PresenterPlugins);
         var addPlugins = function () {
@@ -213,19 +114,17 @@
             a.PluginWrapper.prototype[nm] = function (selector, opts) {
 
                 // plugins
-                if (a.Helpers.IsUndefinedOrNull(plugin))
+                if (a.IsUndefinedOrNull(plugin))
                     throw new Error("PresenterPlugin '" + nm + "' does not exist.");
 
                 // sort out selectors!
-                var selectors;
-                if (a.Helpers.IsArray(selector)) {
-                    selectors = selector; // array of strings or elements
-                } else {
-                    selectors = [selector]; // string or element
+                var jEl = selector;
+                if (jEl.jquery === undefined) {
+                    jEl = typeof selector === "string" ? this.Presenter.Element(selector) : this.Presenter.DomHelper(jEl);
                 }
 
                 // go!
-                plugin.callback(selectors, opts, this.Presenter);
+                plugin.callback(jEl, opts, this.Presenter);
 
             }
             addPluginCounter++;
@@ -238,7 +137,7 @@
             addPlugins();
         }
 
-        // add conditionals
+        // add conditionals to prototype
         var addCondCounter = 0;
         var condKeys = Object.keys(a.PresenterConditionals);
         var addConditionals = function () {
@@ -250,15 +149,19 @@
             var conditional = a.PresenterConditionals[cd];
 
             // find
-            var foundCallback = a.PresenterConditionals[cd];
-            if (a.Helpers.IsUndefinedOrNull(foundCallback))
+            if (a.IsUndefinedOrNull(conditional))
                 throw new Error("PresenterConditional '" + cd + "' does not exist.");
 
-            a.ConditionalsWrapper.prototype[cd] = function (sl, boolCallback) {
+            a.ConditionalsWrapper.prototype[cd] = function (selector, boolCallback) {
+
+                // sort out selectors!
+                var jEl = selector;
+                if (jEl.jquery === undefined) {
+                    jEl = typeof selector === "string" ? this.Presenter.Element(selector) : this.Presenter.DomHelper(jEl);
+                }
 
                 // add
-                debugger;
-                this.Presenter.PresenterConditionals.push({ name: cd, selector: sl, boolCallback: boolCallback, conditional: conditional });
+                this.Presenter.PresenterConditionals.push({ name: cd, element: jEl, boolCallback: boolCallback, conditional: conditional });
             }
 
             addCondCounter++;
@@ -274,19 +177,25 @@
         // go
         a.DomHelper(window).load(function (e) {
 
-            // look for an-presenter
-            a.DomHelper("[an-presenter]").each(function (i, el) {
-                var jEl = a.DomHelper(el);
-                var name = jEl.attr("an-presenter");
-                a.InitializePresenter(name, jEl);
+            // pre-configures
+            a.Applications.forEach(function (app) {
+
+                app.OnApplicationStarts.forEach(function (start) {
+
+                    if (a.IsFunc(start)) {
+                        start(app);
+                    }
+
+                });
+
             });
 
             // configures
             a.Applications.forEach(function (app) {
 
-                app.Configurations.forEach(function (conf) {
+                app.OnApplicationConfigures.forEach(function (conf) {
 
-                    if (a.Helpers.IsFunc(conf)) {
+                    if (a.IsFunc(conf)) {
                         conf(app);
                     }
 
@@ -294,12 +203,19 @@
 
             });
 
+            // look for an-presenter
+            a.DomHelper("[an-presenter]").each(function (i, el) {
+                var jEl = a.DomHelper(el);
+                var name = jEl.attr("an-presenter");
+                a.InitializePresenter(name, jEl);
+            });
+
             // runs
             a.Applications.forEach(function (app) {
 
-                app.Runs.forEach(function (r) {
+                app.OnApplicationRuns.forEach(function (r) {
 
-                    if (a.Helpers.IsFunc(r)) {
+                    if (a.IsFunc(r)) {
                         r(app);
                     }
 
@@ -308,12 +224,30 @@
             });
 
             // callback
-            if (a.Helpers.IsFunc(callback))
+            if (a.IsFunc(callback))
                 callback();
 
         });
 
     };
+
+    // before unload
+    a.DomHelper(window).bind("beforeunload", function(e) {
+        
+        // pre-configures
+        a.Applications.forEach(function (app) {
+
+            app.OnApplicationEnds.forEach(function (end) {
+
+                if (a.IsFunc(end)) {
+                    end(app);
+                }
+
+            });
+
+        });
+
+    });
 
 
 })(Another);

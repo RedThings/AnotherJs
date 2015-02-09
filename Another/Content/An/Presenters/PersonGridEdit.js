@@ -7,20 +7,28 @@ var data = [
     { Name: "Jane D", Id: 4 },
 ];
 
-(function(app,a) {
+(function (app, a) {
 
     /*
      * 
      * HTMLWRAPPED
      * 
      */
-    app.CreatePresenter("PersonGridEdit1", function(presenter) {
+    app.CreatePresenter("PersonGridEdit1", function (presenter) {
         console.log("P1 init");
 
         // set data
-        presenter.Model.Data.Persons = a.Helpers.Clone(data);
+        presenter.Model.Data.Persons = data;
+        presenter.Model.Ui.ShowSomething = false;
+        
 
-       
+        // click/submit
+        presenter.SubmitForm = function (e, el) {
+            alert("Submit");
+        };
+        presenter.ClickMe = function (e, el) {
+            alert("Clicked");
+        }
 
     });
 
@@ -33,18 +41,44 @@ var data = [
         console.log("P2 init");
 
         // set data
-        presenter.Model.Data.Persons = a.Helpers.Clone(data);
-        
+        presenter.Model.Data.Persons = a.Clone(data);
+
         // set repeater
         presenter.Plugins.Repeater("#person_grid_row", {
-            
-            data:"row in {Data}.Persons",
+            data: "row in {Data}.Persons",
             onRowBinding: function (elementRow, dataRow) {
                 elementRow.append("<td>" + dataRow.Id + "</td>");
                 elementRow.append("<td>" + dataRow.Name + "</td>");
             }
         });
 
+        // set test buttons etc
+        presenter.Plugins.Submit("#the_form", {
+            onsubmit: function (e, el) {
+                alert("I'm submitted 2");
+            }
+        });
+        presenter.Plugins.Click("#btnClick", {
+            onclick: function (e, el) {
+                alert("I'm clicked 2");
+            }
+        });
+        presenter.Plugins.Click("#btnShowHide", {
+            onclick: function () {
+                presenter.Model.Ui.ShowSomething = !presenter.Model.Ui.ShowSomething;
+            }
+        });
+        presenter.Plugins.IfText("#btnShowHide", {
+            propName: "{Ui}.ShowSomething",
+            trueState: "Hide",
+            falseState: "Show"
+        });
+        presenter.Conditionals.Show("#h1Shown", function() {
+            return presenter.Model.Ui.ShowSomething === true;
+        });
+
+        presenter.Model.Ui.ShowSomething = false;
+
     });
 
-})(AnotherDemosApp,Another);
+})(AnotherDemosApp, Another);
