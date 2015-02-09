@@ -2,35 +2,40 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>AnotherJs > Demos > Person Grid Edit</title>
+    <link href="../Content/bootstrap.min.css" rel="stylesheet" />
 </head>
-<body>
+<body class="container-fluid">
     <h2>Person Grid Edit</h2>
 
     <div an-presenter="PersonGridEdit1">
         <h3>HtmlWrapper</h3>
-        <table>
+        <table class="table table-bordered table-condensed">
             <tr an-repeater="row in {Data}.Persons">
                 <td an-model="row.Id"></td>
                 <td><span an-model="row.Name"></span></td>
             </tr>
         </table>
         <form an-submit="{Presenter}.SubmitForm(e, el)">
-            <button type="button" an-click="{Presenter}.ClickMe(e, el)">Click</button>
-            <button type="submit">Submit</button>
-            <button type="button" an-iftext="{Ui}.ShowSomething ? 'Hide':'Show'" an-click="{Ui}.ShowSomething = !{Ui}.ShowSomething"></button>
+            <button class="btn btn-default" type="button" an-click="{Presenter}.ClickMe(e, el)">Click</button>
+            <button class="btn btn-default" type="submit">Submit</button>
+            <button class="btn btn-default" type="button" an-iftext="{Ui}.ShowSomething ? 'Hide':'Show'" an-click="{Ui}.ShowSomething = !{Ui}.ShowSomething"></button>
+            <button an-click="{Presenter}.ChangeSomething()" type="button"></button>
             <h1 an-show="{Ui}.ShowSomething">I'M SHOWN</h1>
         </form>
     </div>
     <hr />
     <div id="person_grid_edit">
         <h3>JS only</h3>
-        <table>
-            <tr id="person_grid_row"></tr>
+        <table class="table table-bordered table-condensed">
+            <tr id="person_grid_row">
+                <td></td>
+                <td></td>
+            </tr>
         </table>
         <form id="the_form">
-            <button type="button" id="btnClick">Click</button>
-            <button type="submit" id="btnSubmit">Submit</button>
-            <button type="button" id="btnShowHide"></button>
+            <button class="btn btn-default" type="button" id="btnClick">Click</button>
+            <button class="btn btn-default" type="submit" id="btnSubmit">Submit</button>
+            <button class="btn btn-default" type="button" id="btnShowHide"></button>
             <h1 id="h1Shown">I'M SHOWN</h1>
         </form>
 

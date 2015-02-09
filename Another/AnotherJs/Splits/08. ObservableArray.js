@@ -143,34 +143,28 @@
 
             // push
             push: function (value) {
+                
                 Array.prototype.push.call(this, value);
-                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                //    rpt.AddNewElement(value);
-                //});
-                throw  new Error("Change something in repeater?");
-                this.fireChange();
+
+                var args = arguments;
+                this.fireChange("push", args);
+
                 return this;
             },
 
             // pop
             pop: function () {
                 Array.prototype.pop.call(this);
-                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                //    rpt.RemoveLastElement();
-                //});
-                throw new Error("Change something in repeater?");
-                this.fireChange();
+                var args = arguments;
+                this.fireChange("pop", args);
                 return this;
             },
 
             // reverse
             reverse: function () {
                 Array.prototype.reverse.call(this);
-                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                //    rpt.ReverseElements();
-                //});
-                throw new Error("Change something in repeater?");
-                this.fireChange();
+                var args = arguments;
+                this.fireChange("reverse", args);
                 return this;
             },
 
@@ -190,15 +184,7 @@
                     Array.prototype.splice.call(this, strt, 0, theVal);
                     strt++;
                 }
-                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                //    if (strt === undefined) {
-                //        rpt.RemoveAllElements();
-                //    } else {
-                //        rpt.SpliceElements(args);
-                //    }
-                //});
-                throw new Error("Change something in repeater?");
-                this.fireChange();
+                this.fireChange("splice", args);
                 return this;
             },
 
@@ -210,11 +196,8 @@
             // shift
             shift: function () {
                 var output = Array.prototype.shift.call(this);
-                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                //    rpt.RemoveFirstElement();
-                //});
-                throw new Error("Change something in repeater?");
-                this.fireChange();
+                var args = arguments;
+                this.fireChange("shift", args);
                 return output;
             },
 
@@ -226,11 +209,7 @@
                     var theVal = args[countr];
                     Array.prototype.splice.call(this, 0, 0, theVal);
                 }
-                //ObservableArray.prototype.checkRepeater.call(this, function (rpt) {
-                //    rpt.AddElementsInFront(args);
-                //});
-                throw new Error("Change something in repeater?");
-                this.fireChange();
+                this.fireChange("unshift", args);
                 return this;
             },
 
@@ -247,40 +226,41 @@
             //    this.fullName = fullName;
             //},
 
+            subscribeToChanges:function(func) {
+                if (this.subscribers === undefined) this.subscribers = [];
+                this.subscribers.push(func);
+            },
+
             // fire change
-            fireChange: function () {
+            fireChange: function (nm,args) {
 
-                //// self
-                //var self = this;
-                //var theValue = self;
+                var ts = this;
+                if (this.subscribers !== undefined) {
+                    ts.subscribers.forEach(function(func) {
 
-                //// find in observables
-                //var found = a._getObservable(this.observables, this.fullName);
+                        func(nm,args,ts);
 
-                //// check
-                //if (found.length > 0) {
-                //    found.forEach(function (f) {
-
-                //        a._checkAndFireFromObservable(self.parentObj, f, self.childObjName, theValue);
-
-                //    });
-                //}
-                throw new Error("Fire change in repeater?");
+                    });
+                }
 
             },
 
-            //// set repeater
-            //setRepeater: function (rpt) {
-            //    this.repeater = rpt;
-            //},
+            initialize:function(fullName, origArr) {
 
-            //// check repeater
-            //checkRepeater: function (func) {
-            //    if (!a.IsUndefinedOrNull(this.repeater) && a.IsFunc(func)) {
-            //        func(this.repeater);
-            //    }
-            //}
+                // self
+                var ts = this;
 
+                // set name
+                this.fullName = fullName;
+
+                // set arr
+                this.originalArray = origArr;
+                this.originalArray.forEach(function(d) {
+                    ts.pushNoFire(d);
+                });
+
+
+            }
 
         };
 

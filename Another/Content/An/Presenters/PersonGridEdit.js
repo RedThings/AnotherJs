@@ -29,6 +29,9 @@ var data = [
         presenter.ClickMe = function (e, el) {
             alert("Clicked");
         }
+        presenter.ChangeSomething = function(e, el) {
+            presenter.Model.Data.Persons[1].Id = 1231456;
+        }
 
     });
 
@@ -46,9 +49,8 @@ var data = [
         // set repeater
         presenter.Plugins.Repeater("#person_grid_row", {
             data: "row in {Data}.Persons",
-            onRowBinding: function (elementRow, dataRow) {
-                elementRow.append("<td>" + dataRow.Id + "</td>");
-                elementRow.append("<td>" + dataRow.Name + "</td>");
+            onRowBinding: function (el, data) {
+                
             }
         });
 

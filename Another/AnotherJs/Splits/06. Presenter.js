@@ -12,8 +12,6 @@
         if (a.IsUndefinedOrNull(container) || container.length < 1)
             throw new Error("Presenter: container must be at least one element");
 
-
-
         // dom helper
         this.DomHelper = a.GetDependency("DomHelper");
 
@@ -54,16 +52,6 @@
             str = a.ReplaceAll(str, "{Form}", "Model.Form");
             return str;
         }
-        this.GetObjectFromFullName = function (fullName) {
-            var obj = undefined;
-            eval("obj = ts." + fullName);
-            return obj;
-        }
-        this.GetObjectFromPreName = function (preName) {
-            var obj = undefined;
-            eval("obj = ts." + ts.GetFullName(preName));
-            return obj;
-        }
         this.GetPresenterBasedEvalString = function (presenterAlias, str) {
 
             var replaced = ts.GetFullName(str);
@@ -72,6 +60,12 @@
             return output;
 
         }
+        this.GetPresenterValue = function (fullName) {
+            var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
+            var output = undefined;
+            eval("output = " + evalStr + ";");
+            return output;
+        };
         this.ShouldBeObservableArray = function (obj) {
             return a.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
         }
@@ -85,7 +79,7 @@
             var fullName = ts.GetFullName(preOrFullName);
 
             // get object
-            var obj = ts.GetObjectFromFullName(fullName);
+            var obj = ts.GetPresenterValue(fullName);
 
             // check if exists, then carry on
             if (!(a.IsUndefinedOrNull(obj) || typeof obj !== "object")) {
@@ -122,12 +116,24 @@
         var _alreadyObserving = {};
         var checkForArraysAndOrObjectsToBind = function (fullName, propName, obj) {
 
+            // start
+            var childPropName = propName;
+
+            // try parse num
+            if (!isNaN(propName)) {
+                childPropName = "[" + childPropName + "]";
+            } else {
+                childPropName = "." + childPropName;
+            }
+
             // childname
-            var childName = fullName + "." + propName;
+            var childName = fullName + childPropName;
 
             // array?
             if (ts.ShouldBeObservableArray(obj)) {
-                obj = ts.ConvertToObservableArray(childName, obj);
+
+                var childObj = undefined;
+                ts.ConvertToObservableArray(childName, childObj);
             }
 
             // object
@@ -143,14 +149,12 @@
 
             // add
             changedValues.forEach(function (vl) {
-
+                
                 // new val
                 var newVal = vl.object[vl.name];
 
                 // check if add
                 if (vl.type === "add") {
-
-
 
                     // check
                     checkForArraysAndOrObjectsToBind(fullName, vl.name, newVal);
@@ -163,13 +167,24 @@
                 var found = _changeObservers.filter(function (co) {
                     return co.fullName == changeObserversKey;
                 });
-
-                // loop found
                 found.forEach(function (f) {
 
                     f.changeFunc(newVal);
 
                 });
+
+                // find by parent
+                var parentObj = ts.GetPresenterValue(fullName);
+                var found2 = _changeObservers.filter(function (co) {
+                    return co.fullName == fullName;
+                });
+                found2.forEach(function (f) {
+                    
+                    f.changeFunc(parentObj, vl.name, newVal);
+
+                });
+
+                
 
             });
 
@@ -179,7 +194,10 @@
         }
         this.ConvertToObservableArray = function (fullname, arr) {
 
-            //console.log("TODO: ConvertToObservableArray");
+            var newArr = new a.ObservableArray();
+            newArr.initialize(fullname, arr);
+            eval(ts.GetPresenterBasedEvalString("ts", fullname) + " = newArr;");
+            return newArr;
 
         }
         this.ObserveChange = function (fullname, changeFunc) {
