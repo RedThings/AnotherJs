@@ -30,25 +30,41 @@
     a.PresenterPlugins = {};
 
     // Initialize presenter
-    a.InitializePresenter = function (name, container, arrayOfParams, callback) {
-
+    a.InitializePresenter = function (name, container, arrayOfParams, preCallback, callback) {
+        
         if (typeof arrayOfParams === "function") {
-            callback = arrayOfParams;
+            if (preCallback === undefined) {
+                callback = arrayOfParams;
+                preCallback = undefined;
+            } else {
+                callback = preCallback;
+                preCallback = arrayOfParams;
+            }
             arrayOfParams = undefined;
+
         }
+
+        if (preCallback === undefined) preCallback = function (prs) { };
+        if (callback === undefined) callback = function(prs) {};
+
 
         if (typeof container === "string") {
             container = a.DomHelper(container);
         }
 
-        if (a.IsUndefinedOrNull(container) || container.length < 1) container = a.DomHelper("<div />");
+        if (a.IsUndefinedOrNull(container) || container.length < 1)
+            container = a.DomHelper("<div />");
 
 
         // 
         a.RaiseEvent("OnBeginPresenterInitializing", name);
 
         // find
-        var presenterObj = a.Presenters[name];
+        var presenterObj=name;
+        if (typeof name === "string") {
+            presenterObj = a.Presenters[name];
+        }
+        
 
         // check
         if (a.IsUndefinedOrNull(presenterObj))
@@ -62,10 +78,18 @@
             Form: {},
             Data: {}
         };
-        var presenter = new a.AnotherPresenter(name, model, container);
-        presenter.Observe("{Model}");
 
-        if (a.IsUndefinedOrNull(arrayOfParams) || arrayOfParams.IsNullOrEmpty()) {
+        // create presenter
+        var presenter = new a.AnotherPresenter(name, model, container);
+
+        // pre
+        preCallback(presenter);
+
+        // observe
+        presenter.Observe("{Model}");
+        
+        // check params
+        if (a.IsUndefinedOrNull(arrayOfParams) || arrayOfParams.length < 1) {
             presenterObj(presenter);
 
         } else {

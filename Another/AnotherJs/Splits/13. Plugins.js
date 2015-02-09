@@ -5,6 +5,63 @@
     a.PresenterPluginsApp = a.CreateApplication("Another.PresenterPluginsApp");
     (function (ap) {
 
+        // Presenter.Plugins.Model
+        ap.AddPresenterPlugin("Model", "model", function (theEl, opts, presenter) {
+
+            // get value
+            var theVal = presenter.GetPresenterValue(opts.model);
+
+            // change
+            presenter.ObserveChange(opts.model, function (newVal) {
+                
+                // set
+                if (theEl.data("change_from_element") !== true) {
+                    theEl.html(newVal);
+                    theEl.val(newVal);
+                } else {
+                    theEl.data("change_from_element", false);
+                }
+
+            });
+
+            // evName
+            var evName = undefined;
+            var tagName = theEl[0].tagName;
+            switch (tagName) {
+                case "TEXTAREA":
+                    {
+                        evName = "keyup";
+                        break;
+                    }
+                case "INPUT":
+                    {
+                        if (theEl.attr("type") !== "submit") evName = "keyup";
+                        break;
+                    }
+                default:
+                    break;
+
+            }
+
+
+            // bind
+            theEl.bind("change", function (e) {
+                theEl.data("change_from_element", true);
+                presenter.SetPresenterValue(opts.model, theEl.val());
+            });
+            if (evName !== undefined) {
+                theEl.bind(evName, function (e) {
+                    theEl.data("change_from_element", true);
+                    presenter.SetPresenterValue(opts.model, theEl.val());
+                });
+            }
+
+            // init
+            theEl.html(theVal);
+            theEl.val(theVal);
+
+        });
+
         // Presenter.Plugins.Click
         ap.AddPresenterPlugin("Click", "onclick", function (theEl, opts, presenter) {
 
@@ -14,8 +71,6 @@
                 var evalStr = "opts.onclick = function(e,el) {" +
                    presenter.GetPresenterBasedEvalString("presenter", opts.onclick) +
                 "}";
-
-
 
                 eval(evalStr);
             }
@@ -89,254 +144,282 @@
         ap.AddPresenterPlugin("Repeater", "data", function (element, opts, presenter) {
 
             // create repeater
-            var rpt = new a.Repeater(element, opts, presenter);
+            var rpt = new ap.Repeater(element, opts, presenter);
             // go
             rpt.Initialize();
 
         });
 
+        // repeater ui
+        ap.Repeater = function (element, opts, presenter) {
 
+            // self
+            var ts = this;
 
-    })(a.PresenterPluginsApp);
+            // construct
+            var construct = function () {
 
-    // repeater ui
-    a.Repeater = function (element, opts, presenter) {
+                // set simple ones
+                ts.Presenter = presenter;
+                ts.ParentElement = element.parent();
+                ts.ClonedHtml = element[0].outerHTML;
+                element.remove();
+                ts.Presenter = presenter;
+                ts.OnRowBinding = opts.onRowBinding;
 
-        // self
-        var ts = this;
+                // set data
+                ts.Data = undefined;
+                var splt = opts.data.split(" ");
+                if (splt[1] !== "in")
+                    throw new Error("Repeater options.data must be in the format '[alias] in [property]'");
+                ts.RowAlias = splt[0];
+                ts.FullName = presenter.GetFullName(splt[2]);
+                ts.Data = presenter.GetPresenterValue(ts.FullName);
 
-        // construct
-        var construct = function () {
-
-            // set simple ones
-            ts.Presenter = presenter;
-            ts.Element = element;
-            ts.ParentElement = element.parent();
-            ts.ClonedHtml = element[0].outerHTML;
-            ts.Presenter = presenter;
-            ts.OnRowBinding = opts.onRowBinding;
-
-            // set data
-            ts.Data = undefined;
-            var splt = opts.data.split(" ");
-            if (splt[1] !== "in")
-                throw new Error("Repeater options.data must be in the format '[alias] in [property]'");
-            ts.RowAlias = splt[0];
-            ts.FullName = presenter.GetFullName(splt[2]);
-            ts.Data = presenter.GetPresenterValue(ts.FullName);
-
-            // do checks
-            if (ts.Data.toString() !== "Another.ObservableArray") {
-                if (a.IsArray(ts.Data)) {
-                    presenter.ConvertToObservableArray(ts.FullName, ts.Data);
-                    ts.Data = presenter.GetPresenterValue(ts.FullName);
-                } else {
-                    throw new Error("Another.Repeater data must be Another.ObservableArray or Array");
+                // do checks
+                if (ts.Data.toString() !== "Another.ObservableArray") {
+                    if (a.IsArray(ts.Data)) {
+                        presenter.ConvertToObservableArray(ts.FullName, ts.Data);
+                        ts.Data = presenter.GetPresenterValue(ts.FullName);
+                    } else {
+                        throw new Error("Another.Repeater data must be Another.ObservableArray or Array");
+                    }
                 }
-            }
-            if (typeof ts.OnRowBinding === "string") {
-                eval("ts.OnRowBinding = function(el,data){ " + presenter.GetPresenterBasedEvalString("presenter", ts.FullName) + " }");
-            }
-            if (ts.OnRowBinding === undefined) {
-                ts.OnRowBinding = function (){}
-            }
+                if (typeof ts.OnRowBinding === "string") {
+                    eval("ts.OnRowBinding = function(el,data,rowPresenter){ " + presenter.GetPresenterBasedEvalString("presenter", ts.FullName) + " }");
+                }
+                if (ts.OnRowBinding === undefined) {
+                    ts.OnRowBinding = function () { }
+                }
 
-            // subscribe
-            ts.Data.subscribeToChanges(function (changeName, args) {
+                // subscribe
+                ts.Data.subscribeToChanges(function (changeName, args) {
 
-                switch (changeName) {
-                    case "push":
-                        {
-                            var val = args[0];
-                            ts.AddNewElement(val);
-                            break;
-                        }
-                    case "pop":
-                        {
-                            ts.RemoveLastElement();
-                            break;
-                        }
-                    case "reverse":
-                        {
-                            ts.ReverseElements();
-                            break;
-                        }
-                    case "splice":
-                        {
-                            var strt = args[0];
-                            if (strt === undefined) {
-                                ts.RemoveAllElements();
-                            } else {
-                                ts.SpliceElements(args);
+                    switch (changeName) {
+                        case "push":
+                            {
+                                var val = args[0];
+                                var indx = ts.ParentElement.children().length;
+                                ts.AddNewElement(val);
+                                break;
                             }
-                            break;
-                        }
+                        case "pop":
+                            {
+                                ts.RemoveLastElement();
+                                break;
+                            }
+                        case "reverse":
+                            {
+                                ts.ReverseElements();
+                                break;
+                            }
+                        case "splice":
+                            {
+                                var strt = args[0];
+                                if (strt === undefined) {
+                                    ts.RemoveAllElements();
+                                } else {
+                                    ts.SpliceElements(args);
+                                }
+                                break;
+                            }
 
-                    case "shift":
-                        {
-                            ts.RemoveFirstElement();
+                        case "shift":
+                            {
+                                ts.RemoveFirstElement();
+                                break;
+                            }
+                        case "unshift":
+                            {
+                                ts.AddElementsInFront(args);
+                                break;
+                            }
+                        default:
                             break;
-                        }
-                    case "unshift":
-                        {
-                            ts.AddElementsInFront(args);
-                            break;
-                        }
-                    default:
-                        break;
-                }
+                    }
 
-            });
-
-            // observe
-            ts.Presenter.DomHelper.each(ts.Data, function(dCount, d) {
-                var obsName = ts.FullName + "[" + dCount + "]";
-                ts.Presenter.ObserveChange(obsName, function (row, name, newVal) {
-                    ts.OnRowChanged(dCount, row, name, newVal);
                 });
-            });
-            
 
-        };
 
-        // construct
-        construct();
+            };
 
-        // first run
-        this.Initialize = function () {
+            // construct
+            construct();
 
-            // init
-            ts.Data.forEach(function (d) {
-                ts.AddNewElement(d, true);
-            });
-            this.firstBindingComplete = true;
+            // first run
+            this.Initialize = function () {
 
-        };
+                // init
+                ts.Presenter.DomHelper.each(ts.Data, function (indx, d) {
+                    ts.AddNewElement(d, true);
+                });
+                this.firstBindingComplete = true;
 
-        // on row change
-        ts.OnRowChanged= function(indx, dataRow, propName, propVal) {
-            console.log("this[" + indx + "] changed property " + propName + " to " + propVal + ". Row data now: ", dataRow);
-        }
+            };
 
-        // get element
-        this.CreateElement = function() {
-            var newEl = ts.Presenter.DomHelper(ts.ClonedHtml);
-            newEl.removeAttr("id");
-            return newEl;
-        };
+            // on row change
+            this.OnRowChanged = function (dataRow, propName, propVal) {
+                //console.log("Changed property " + propName + " to " + propVal + ". Row data now: ", dataRow);
+            }
 
-        // add new element
-        this.AddNewElement = function (rowVal, override) {
+            // create
+            this.CreateElement = function (rowVal, callback) {
 
-            if (override || this.firstBindingComplete === true) {
+                // get id
+                var id = a.GetRandom(true);
 
                 // create new
-                var newEl = ts.CreateElement();
+                var newEl = ts.Presenter.DomHelper(ts.ClonedHtml);
+                newEl.hide();
 
-                // append
-                ts.ParentElement.append(newEl);
+                // add id
+                newEl.attr("id", id);
 
-                // fire binding
-                ts.OnRowBinding(newEl, rowVal);
+                // create presenter
+                var pName = ts.CreatePresenter();
 
-                // show
-                newEl.show();
+                // indx
+                ap.InitializePresenter(pName, newEl, function (p) {
+
+                    p.AddProperty(ts.RowAlias, rowVal);
+                    p.Observe(ts.RowAlias);
+
+                }, function (p) {
+
+                    // fire binding
+                    ts.OnRowBinding(newEl, rowVal, p);
+
+                    // show
+                    newEl.show();
+
+                    // check
+                    if (a.IsFunc(callback)) callback(newEl);
+                });
+
             }
-        }
 
-        // reverse
-        this.ReverseElements = function () {
-            var childrn = ts.prnt.children();
-            for (var i = 0; i < childrn.length; i++) {
+            // add new element
+            this.AddNewElement = function (rowVal, override) {
 
-                ts.prnt.prepend(childrn[i]);
+                if (override || this.firstBindingComplete === true) {
+                    ts.CreateElement(rowVal, function (el) {
+                        ts.ParentElement.append(el);
+                    });
+                }
             }
-        }
 
-        // pop
-        this.RemoveLastElement = function () {
-            ts.prnt.children().last().remove();
-        };
+            // presenterName
+            this.CreatePresenter = function () {
 
-        // shift
-        this.RemoveFirstElement = function () {
-            ts.prnt.children().first().remove();
-        };
+                // get name
+                var pName = "___rpt_" + a.GetRandom(true);
 
-        // splice()
-        this.RemoveAllElements = function () {
-            ts.prnt.children().remove();
-        };
+                // create
+                ap.CreatePresenter(pName, function (p) { });
 
-        // unshift
-        this.AddElementsInFront = function (args) {
+                //
+                return pName;
 
-            // find el to put before
-            var childrn = ts.prnt.children();
-            var elBefore = ts.prsnt.DomHelper(childrn.get(0));
+            };
 
-            // iterate args
-            for (var arg = 0; arg < args.length; ++arg) {
-                var d = args[arg];
-                var newEl = ts.CreateElement();
-                ts.opts.onRowBinding(newEl, d);
-                newEl.show();
+            // reverse
+            this.ReverseElements = function () {
+                var childrn = ts.ParentElement.children();
+                for (var i = 0; i < childrn.length; i++) {
 
-                if (elBefore.length < 1) {
-                    ts.prnt.append(newEl);
-                } else {
+                    ts.ParentElement.prepend(childrn[i]);
+                }
+            }
 
-                    if (arg === 0) {
+            // pop
+            this.RemoveLastElement = function () {
+                ts.ParentElement.children().last().remove();
+            };
 
-                        elBefore.before(newEl);
+            // shift
+            this.RemoveFirstElement = function () {
+                ts.ParentElement.children().first().remove();
+            };
+
+            // splice()
+            this.RemoveAllElements = function () {
+                ts.ParentElement.children().remove();
+            };
+
+            // unshift
+            this.AddElementsInFront = function (args) {
+
+                // find el to put before
+                var childrn = ts.ParentElement.children();
+                var elBefore = ts.Presenter.DomHelper(childrn.get(0));
+
+                // iterate args
+                for (var arg = 0; arg < args.length; ++arg) {
+                    var d = args[arg];
+                    ts.CreateElement(d, function (newEl) {
+                        newEl.show();
+
+                        if (elBefore.length < 1) {
+                            ts.ParentElement.append(newEl);
+                        } else {
+
+                            if (arg === 0) {
+
+                                elBefore.before(newEl);
+                            } else {
+                                elBefore.after(newEl);
+                            }
+
+                        }
+                        elBefore = newEl;
+
+                    });
+                }
+            }
+
+            // splice
+            this.SpliceElements = function (args) {
+
+                // get vars
+                var indx = args[0];
+                var count = args[1];
+                var childrn = ts.ParentElement.children();
+                var lastIndex = indx + (count - 1);
+
+                // add remove class
+                childrn.each(function (ii, ch) {
+
+                    if (ii >= indx && ii <= lastIndex) {
+                        ts.Presenter.DomHelper(ch).addClass("tbm___");
+                    }
+
+                });
+
+                // remove
+                var toRemove = ts.ParentElement.find(".tbm___");
+                toRemove.remove();
+
+                // find el to put after
+                var elBefore = ts.Presenter.DomHelper(childrn.get(indx - 1));
+
+                // iterate args
+                for (var arg = 2; arg < args.length; ++arg) {
+                    var d = args[arg];
+                    var newEl = ts.CreateElement();
+                    ts.opts.onRowBinding(newEl, d);
+                    newEl.show();
+                    if (elBefore.length < 1) {
+                        ts.ParentElement.append(newEl);
                     } else {
                         elBefore.after(newEl);
                     }
-
+                    elBefore = newEl;
                 }
-                elBefore = newEl;
             }
-        }
+        };
 
-        // splice
-        this.SpliceElements = function (args) {
+    })(a.PresenterPluginsApp);
 
-            // get vars
-            var indx = args[0];
-            var count = args[1];
-            var childrn = ts.prnt.children();
-            var lastIndex = indx + (count - 1);
 
-            // add remove class
-            childrn.each(function (ii, ch) {
-
-                if (ii >= indx && ii <= lastIndex) {
-                    ts.prsnt.DomHelper(ch).addClass("tbm___");
-                }
-
-            });
-
-            // remove
-            var toRemove = ts.prnt.find(".tbm___");
-            toRemove.remove();
-
-            // find el to put after
-            var elBefore = ts.prsnt.DomHelper(childrn.get(indx - 1));
-
-            // iterate args
-            for (var arg = 2; arg < args.length; ++arg) {
-                var d = args[arg];
-                var newEl = ts.CreateElement();
-                ts.opts.onRowBinding(newEl, d);
-                newEl.show();
-                if (elBefore.length < 1) {
-                    ts.prnt.append(newEl);
-                } else {
-                    elBefore.after(newEl);
-                }
-                elBefore = newEl;
-            }
-        }
-    };
 
 })(Another);

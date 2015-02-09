@@ -11,8 +11,14 @@
         <h3>HtmlWrapper</h3>
         <table class="table table-bordered table-condensed">
             <tr an-repeater="row in {Data}.Persons">
-                <td an-model="row.Id"></td>
-                <td><span an-model="row.Name"></span></td>
+                <td>
+                    <input class="form-control" type="text" an-model="row.Id" />
+                    <span an-model="row.Id"></span>
+                </td>
+                <td>
+                    <textarea class="form-control" type="text" an-model="row.Name"></textarea>
+                    <span an-model="row.Name"></span>
+                </td>
             </tr>
         </table>
         <form an-submit="{Presenter}.SubmitForm(e, el)">

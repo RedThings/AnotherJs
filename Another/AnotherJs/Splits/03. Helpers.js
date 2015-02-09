@@ -45,7 +45,7 @@
             return v.toString(16);
         });
 
-        return forId ? "id_" + rand.replace("-", "") : rand;
+        return forId ? "id_" + a.ReplaceAll(rand,"-", "") : rand;
     };
     a.Clone = function (obj) {
         return JSON.parse(JSON.stringify(obj));

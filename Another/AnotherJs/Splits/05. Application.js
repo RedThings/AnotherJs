@@ -77,8 +77,8 @@
         };
 
         // initialize presenter
-        this.InitializePresenter = function (name, container, arrayOfParams, callback) {
-            return a.InitializePresenter(name, container, arrayOfParams, callback);
+        this.InitializePresenter = function (name, container, arrayOfParams, preCallback, callback) {
+            return a.InitializePresenter(name, container, arrayOfParams, preCallback, callback);
         }
 
         // get service

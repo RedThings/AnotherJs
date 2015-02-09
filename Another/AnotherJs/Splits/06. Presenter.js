@@ -53,24 +53,51 @@
             return str;
         }
         this.GetPresenterBasedEvalString = function (presenterAlias, str) {
-
+            
+            // simple
             var replaced = ts.GetFullName(str);
             var output = a.ReplaceAll(replaced, "Model", presenterAlias + ".Model");
             if (a.StartsWith(output, ".")) return presenterAlias + output;
+
+            // var with props
+            var chnk1 = output.split(".")[0];
+            var isAddedProp = ts.AddedProperties.filter(function (pr) { return pr === chnk1; }).length > 0;
+            if (isAddedProp)
+                return presenterAlias + "." + output;
+
+            // finally
             return output;
 
         }
         this.GetPresenterValue = function (fullName) {
-            var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
-            var output = undefined;
-            eval("output = " + evalStr + ";");
-            return output;
+            
+            try {
+                var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
+                var output = undefined;
+                eval("output = " + evalStr + ";");
+                return output;
+            } catch (err) {
+                return undefined;
+            }
+        };
+        this.SetPresenterValue = function (fullName, val) {
+            
+            try {
+                var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
+                eval(evalStr + " = val");
+                
+            } catch (err) {
+                console.log(err);
+            }
         };
         this.ShouldBeObservableArray = function (obj) {
             return a.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
         }
-
-
+        this.AddedProperties = [];
+        this.AddProperty = function(nm, val) {
+            ts[nm] = val;
+            ts.AddedProperties.push(nm);
+        }
 
         // observe and object
         this.Observe = function (preOrFullName) {
@@ -149,7 +176,7 @@
 
             // add
             changedValues.forEach(function (vl) {
-                
+
                 // new val
                 var newVal = vl.object[vl.name];
 
@@ -179,12 +206,12 @@
                     return co.fullName == fullName;
                 });
                 found2.forEach(function (f) {
-                    
+
                     f.changeFunc(parentObj, vl.name, newVal);
 
                 });
 
-                
+
 
             });
 
@@ -212,7 +239,7 @@
 
             // look at presenters
             ts.DomHelper.each(a.PresenterPlugins, function (pluginName, plugin) {
-                
+
                 // vars
                 var nmLower = pluginName.toLowerCase();
                 var attrName = "an-" + nmLower;
@@ -251,7 +278,7 @@
 
             // look at conditionals
             ts.DomHelper.each(a.PresenterConditionals, function (cdName, cd) {
-                
+
                 // vars
                 var nmLower = cdName.toLowerCase();
                 var attrName = "an-" + nmLower;
@@ -271,7 +298,7 @@
                         "};";
                     eval(finalEvalStr);
 
-                   ts.PresenterConditionals.push({ name: cdName, element: jEl, boolCallback: evalBoolFunc, conditional: cd });
+                    ts.PresenterConditionals.push({ name: cdName, element: jEl, boolCallback: evalBoolFunc, conditional: cd });
 
                 });
 
