@@ -7,10 +7,5 @@
         this.Presenter = presenter;
     };
 
-    // conditional wrapper
-    a.ConditionalsWrapper = function (presenter) {
-        this.Presenter = presenter;
-    };
-
 
 })(Another);

@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-var data = [
+var theData = [
     { Name: "Rob J", Id: 1 },
     { Name: "Em J", Id: 2 },
     { Name: "Joe B", Id: 3 },
@@ -14,23 +14,23 @@ var data = [
      * HTMLWRAPPED
      * 
      */
-    app.CreatePresenter("PersonGridEdit1", function (presenter) {
+    app.CreatePresenter("PersonGridEdit1", function (presenter, model, form, ui, data) {
         console.log("P1 init");
-
+        
         // set data
-        presenter.Model.Data.Persons = data;
-        presenter.Model.Ui.ShowSomething = false;
+        data.Persons = theData;
+        ui.ShowSomething = false;
         
 
         // click/submit
-        presenter.SubmitForm = function (e, el) {
+        model.SubmitForm = function (e, el) {
             alert("Submit");
         };
-        presenter.ClickMe = function (e, el) {
+        model.ClickMe = function (e, el) {
             alert("Clicked");
         }
-        presenter.ChangeSomething = function(e, el) {
-            presenter.Model.Data.Persons[1].Id = 1231456;
+        model.ChangeSomething = function(e, el) {
+            data.Persons[1].Id = 1231456;
         }
 
     });
@@ -40,46 +40,36 @@ var data = [
      * JS ONLY
      * 
      */
-    app.CreatePresenter("PersonGridEdit2", function (presenter) {
+    app.CreatePresenter("PersonGridEdit2", function (presenter,model,form,ui,data) {
         console.log("P2 init");
-
+        
         // set data
-        presenter.Model.Data.Persons = a.Clone(data);
+        data.Persons = a.Clone(theData);
 
         // set repeater
-        presenter.Plugins.Repeater("#person_grid_row", {
+        presenter.Plugins.AnRepeater("#person_grid_row", {
             data: "row in {Data}.Persons",
-            onRowBinding: function (el, data) {
-                
-            }
+            onRowBinding: "{Model}.BindRepeaterRow()"
         });
 
         // set test buttons etc
-        presenter.Plugins.Submit("#the_form", {
-            onsubmit: function (e, el) {
-                alert("I'm submitted 2");
-            }
+        presenter.Plugins.AnSubmit("#the_form", {
+            onsubmit: "{Ui}.Submit()"
         });
-        presenter.Plugins.Click("#btnClick", {
-            onclick: function (e, el) {
-                alert("I'm clicked 2");
-            }
+        presenter.Plugins.AnClick("#btnClick", {
+            onclick: "{Ui}.ClickMe()"
         });
-        presenter.Plugins.Click("#btnShowHide", {
-            onclick: function () {
-                presenter.Model.Ui.ShowSomething = !presenter.Model.Ui.ShowSomething;
-            }
+        presenter.Plugins.AnClick("#btnShowHide", {
+            onclick: "{Ui}.ShowSomething = !{Ui}.ShowSomething;"
         });
-        presenter.Plugins.IfText("#btnShowHide", {
-            propName: "{Ui}.ShowSomething",
-            trueState: "Hide",
-            falseState: "Show"
+        presenter.Plugins.AnIftext("#btnShowHide", {
+            condition: "{Ui}.ShowSomething ? 'Hide':'Show'"
         });
-        presenter.Conditionals.Show("#h1Shown", function() {
-            return presenter.Model.Ui.ShowSomething === true;
+        presenter.Plugins.AnShow("#h1Shown", {
+            condition: "{Ui}.ShowSomething"
         });
 
-        presenter.Model.Ui.ShowSomething = false;
+        ui.ShowSomething = false;
 
     });
 

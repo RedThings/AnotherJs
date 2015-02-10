@@ -77,8 +77,8 @@
         };
 
         // initialize presenter
-        this.InitializePresenter = function (name, container, arrayOfParams, preCallback, callback) {
-            return a.InitializePresenter(name, container, arrayOfParams, preCallback, callback);
+        this.InitializePresenter = function (name, container, mdl, preCallback, callback) {
+            return a.InitializePresenter(name, container, mdl, preCallback, callback);
         }
 
         // get service
@@ -113,22 +113,6 @@
             return a.GetDependency(name);
         }
 
-        // conditionals
-        this.AddPresenterConditional = function (name, callback) {
-
-            // check
-            if (a.PresenterConditionals[name] !== undefined) {
-                throw new Error("PresenterConditional '" + name + "' already exists.");
-            }
-
-            // callback
-            a.PresenterConditionals[name] = callback;
-
-            // 
-            return ts;
-
-        }
-
         // plugins
         this.AddPresenterPlugin = function (name, wrapperProp, callback) {
 
@@ -144,7 +128,7 @@
 
             // callback
             a.PresenterPlugins[name] = {
-                wrapperProp: wrapperProp, callback: callback
+                wrapperProp: wrapperProp, callback: callback, attrName: a.GetAttributeName(name)
             };
 
             //

@@ -66,7 +66,6 @@
     <Content Include="AnotherJs\Splits\06. Presenter.js" />
     <Content Include="AnotherJs\Splits\07. Wrappers.js" />
     <Content Include="AnotherJs\Splits\10. ServicesAndDependencies.Js" />
-    <Content Include="AnotherJs\Splits\12. Conditionals.js" />
     <Content Include="Content\An\Apps\AnotherDemosApp.js" />
     <Content Include="Content\An\Presenters\PersonGridEdit.js" />
     <Content Include="Content\bootstrap-theme.css" />
@@ -86,7 +85,7 @@
     <Content Include="AnotherJs\Splits\04. Core.js" />
     <Content Include="AnotherJs\Splits\09. Events.js" />
     <Content Include="AnotherJs\Splits\11. CoreDependencies.js" />
-    <Content Include="AnotherJs\Splits\13. Plugins.js" />
+    <Content Include="AnotherJs\Splits\12. Plugins.js" />
     <None Include="Scripts\jquery-2.1.3.intellisense.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />

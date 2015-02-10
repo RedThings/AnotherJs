@@ -6,14 +6,14 @@
     (function (ap) {
 
         // Presenter.Plugins.Model
-        ap.AddPresenterPlugin("Model", "model", function (theEl, opts, presenter) {
+        ap.AddPresenterPlugin("AnModel", "model", function (theEl, opts, presenter) {
 
             // get value
             var theVal = presenter.GetPresenterValue(opts.model);
 
             // change
             presenter.ObserveChange(opts.model, function (newVal) {
-                
+
                 // set
                 if (theEl.data("change_from_element") !== true) {
                     theEl.html(newVal);
@@ -63,30 +63,20 @@
         });
 
         // Presenter.Plugins.Click
-        ap.AddPresenterPlugin("Click", "onclick", function (theEl, opts, presenter) {
-
-            // check if string
-            if (typeof opts.onclick === "string") {
-
-                var evalStr = "opts.onclick = function(e,el) {" +
-                   presenter.GetPresenterBasedEvalString("presenter", opts.onclick) +
-                "}";
-
-                eval(evalStr);
-            }
+        ap.AddPresenterPlugin("AnClick", "onclick", function (theEl, opts, presenter) {
 
             // on click
             theEl.on("click", presenter.Container, function (e) {
 
                 e.preventDefault();
-                opts.onclick(e, theEl);
+                presenter.Eval(opts.onclick, { "{e}": e, "{el}": theEl });
 
             });
 
         });
 
         // Presenter.Plugins.Submit
-        ap.AddPresenterPlugin("Submit", "onsubmit", function (theForm, opts, presenter) {
+        ap.AddPresenterPlugin("AnSubmit", "onsubmit", function (theForm, opts, presenter) {
 
             theForm.each(function (i, chld) {
                 var child = presenter.DomHelper(chld);
@@ -95,18 +85,10 @@
                 });
             });
 
-            // check if string
-            if (typeof opts.onsubmit === "string") {
-                eval(
-                "opts.onsubmit = function(e,el){" +
-                   presenter.GetPresenterBasedEvalString("presenter", opts.onsubmit) +
-                "}");
-            }
-
             theForm.submit(function (e) {
 
                 e.preventDefault();
-                opts.onsubmit(e, theForm);
+                presenter.Eval(opts.onsubmit, { "{e}": e, "{el}": theForm });
                 return false;
 
             });
@@ -114,23 +96,18 @@
         });
 
         // IfText
-        ap.AddPresenterPlugin("IfText", "fullconditional", function (element, opts, presenter) {
+        ap.AddPresenterPlugin("AnIftext", "condition", function (element, opts, presenter) {
 
-            // from html?
-            if (!a.StringIsNullOrEmpty(opts.fullconditional)) {
-
-                // from html
-                var spltLeft = opts.fullconditional.split("?");
-                opts.propName = a.StripWhitespace(spltLeft[0]);
-                var spltRight = spltLeft[1].split(':');
-                opts.trueState = a.StripWhitespace(spltRight[0]);
-                opts.trueState = a.ReplaceAll(opts.trueState, "'", "");
-                opts.trueState = a.ReplaceAll(opts.trueState, "\"", "");
-                opts.falseState = a.StripWhitespace(spltRight[1]).replace("'", "").replace("\"", "");
-                opts.falseState = a.ReplaceAll(opts.falseState, "'", "");
-                opts.falseState = a.ReplaceAll(opts.falseState, "\"", "");
-
-            }
+            // from html
+            var spltLeft = opts.condition.split("?");
+            opts.propName = a.StripWhitespace(spltLeft[0]);
+            var spltRight = spltLeft[1].split(':');
+            opts.trueState = a.StripWhitespace(spltRight[0]);
+            opts.trueState = a.ReplaceAll(opts.trueState, "'", "");
+            opts.trueState = a.ReplaceAll(opts.trueState, "\"", "");
+            opts.falseState = a.StripWhitespace(spltRight[1]).replace("'", "").replace("\"", "");
+            opts.falseState = a.ReplaceAll(opts.falseState, "'", "");
+            opts.falseState = a.ReplaceAll(opts.falseState, "\"", "");
 
             // now add observe
             presenter.ObserveChange(opts.propName, function (newVal) {
@@ -140,11 +117,40 @@
 
         });
 
+        // show
+        ap.AddPresenterPlugin("AnShow", "condition", function(element, opts, presenter) {
+
+            presenter.ObserveChange(opts.condition, function(newVal) {
+
+                if (newVal === true) {
+                    element.show();
+                } else {
+                    element.hide();
+                }
+                
+            });
+
+        });
+
+        // enable
+        ap.AddPresenterPlugin("AnEnable", "condition", function (element, opts, presenter) {
+            
+            presenter.ObserveChange(opts.condition, function (newVal) {
+                if (newVal === true) {
+                    element.removeAttr("disabled");
+                } else {
+                    element.attr("disabled","disabled");
+                }
+            });
+
+        });
+
         // Presenter.Plugins.Repeater
-        ap.AddPresenterPlugin("Repeater", "data", function (element, opts, presenter) {
+        ap.AddPresenterPlugin("AnRepeater", "data", function (element, opts, presenter) {
 
             // create repeater
             var rpt = new ap.Repeater(element, opts, presenter);
+
             // go
             rpt.Initialize();
 
@@ -174,15 +180,15 @@
                     throw new Error("Repeater options.data must be in the format '[alias] in [property]'");
                 ts.RowAlias = splt[0];
                 ts.FullName = presenter.GetFullName(splt[2]);
-                ts.Data = presenter.GetPresenterValue(ts.FullName);
+                ts.Data = presenter.Eval(ts.FullName);
 
                 // do checks
                 if (ts.Data.toString() !== "Another.ObservableArray") {
                     if (a.IsArray(ts.Data)) {
                         presenter.ConvertToObservableArray(ts.FullName, ts.Data);
-                        ts.Data = presenter.GetPresenterValue(ts.FullName);
+                        ts.Data = presenter.Eval(ts.FullName);
                     } else {
-                        throw new Error("Another.Repeater data must be Another.ObservableArray or Array");
+                        throw new Error("Another.Repeater data must be an Array or an Another.ObservableArray");
                     }
                 }
                 if (typeof ts.OnRowBinding === "string") {
@@ -278,8 +284,11 @@
                 // create presenter
                 var pName = ts.CreatePresenter();
 
+                // get model
+                var mdl = ts.Presenter.Model;
+
                 // indx
-                ap.InitializePresenter(pName, newEl, function (p) {
+                ap.InitializePresenter(pName, newEl, mdl, function (p) {
 
                     p.AddProperty(ts.RowAlias, rowVal);
                     p.Observe(ts.RowAlias);
@@ -419,7 +428,5 @@
         };
 
     })(a.PresenterPluginsApp);
-
-
 
 })(Another);

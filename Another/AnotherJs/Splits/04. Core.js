@@ -23,24 +23,21 @@
     // presenter callbacks
     a.Presenters = {};
 
-    // conditionals
-    a.PresenterConditionals = {};
-
     // plugins
     a.PresenterPlugins = {};
 
     // Initialize presenter
-    a.InitializePresenter = function (name, container, arrayOfParams, preCallback, callback) {
+    a.InitializePresenter = function (name, container, mdl, preCallback, callback) {
         
-        if (typeof arrayOfParams === "function") {
+        if (typeof mdl === "function") {
             if (preCallback === undefined) {
-                callback = arrayOfParams;
+                callback = mdl;
                 preCallback = undefined;
             } else {
                 callback = preCallback;
-                preCallback = arrayOfParams;
+                preCallback = mdl;
             }
-            arrayOfParams = undefined;
+            mdl = undefined;
 
         }
 
@@ -73,7 +70,7 @@
         a.RaiseEvent("OnPresenterInitializing", presenterObj);
 
         // found so initialize
-        var model = {
+        var model = mdl || {
             Ui: {},
             Form: {},
             Data: {}
@@ -88,30 +85,12 @@
         // observe
         presenter.Observe("{Model}");
         
-        // check params
-        if (a.IsUndefinedOrNull(arrayOfParams) || arrayOfParams.length < 1) {
-            presenterObj(presenter);
-
-        } else {
-            var str = "pCallback(presenter,";
-            for (var i = 0; i < arrayOfParams.length; i++) {
-                var p = arrayOfParams[i];
-                str += "'" + p + "'";
-                if (i !== (arrayOfParams.length - 1))
-                    str += ",";
-            };
-            str += ");";
-            eval(str);
-        }
-
-
-
+        // user init
+        presenterObj(presenter, model, model.Form, model.Ui, model.Data);
+        
         // intialize dom
         presenter.InitializeDom(presenter.Container);
         
-        // run conditionals for first time
-        presenter.RunConditionals();
-
         // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);
 
@@ -159,43 +138,6 @@
         };
         if (pluginKeys.length > 0) {
             addPlugins();
-        }
-
-        // add conditionals to prototype
-        var addCondCounter = 0;
-        var condKeys = Object.keys(a.PresenterConditionals);
-        var addConditionals = function () {
-
-            //
-            var cd = condKeys[addCondCounter];
-
-            // find
-            var conditional = a.PresenterConditionals[cd];
-
-            // find
-            if (a.IsUndefinedOrNull(conditional))
-                throw new Error("PresenterConditional '" + cd + "' does not exist.");
-
-            a.ConditionalsWrapper.prototype[cd] = function (selector, boolCallback) {
-
-                // sort out selectors!
-                var jEl = selector;
-                if (jEl.jquery === undefined) {
-                    jEl = typeof selector === "string" ? this.Presenter.Element(selector) : this.Presenter.DomHelper(jEl);
-                }
-
-                // add
-                this.Presenter.PresenterConditionals.push({ name: cd, element: jEl, boolCallback: boolCallback, conditional: conditional });
-            }
-
-            addCondCounter++;
-            if (addCondCounter < condKeys.length) {
-                addConditionals();
-            }
-
-        };
-        if (condKeys.length > 0) {
-            addConditionals();
         }
 
         // go

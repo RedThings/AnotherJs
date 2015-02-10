@@ -33,19 +33,8 @@
 
 
         // helpers
-        this.GetParentName = function (fullName) {
-            var nm = a.GetFullName(fullName);
-            var splt = nm.split(".");
-            splt.pop();
-            return splt.join(".");
-        }
-        this.GetChildName = function (fullName) {
-            var nm = a.GetFullName(fullName);
-            var splt = nm.split(".");
-            return splt[splt.length - 1];
-        }
         this.GetFullName = function (str) {
-            str = a.ReplaceAll(str, "{Presenter}", "");
+            if (a.StringIsNullOrEmpty(str)) throw new Error("Presenter.GetFullName: str cannot be undefined, null or empty");
             str = a.ReplaceAll(str, "{Model}", "Model");
             str = a.ReplaceAll(str, "{Ui}", "Model.Ui");
             str = a.ReplaceAll(str, "{Data}", "Model.Data");
@@ -53,7 +42,7 @@
             return str;
         }
         this.GetPresenterBasedEvalString = function (presenterAlias, str) {
-            
+
             // simple
             var replaced = ts.GetFullName(str);
             var output = a.ReplaceAll(replaced, "Model", presenterAlias + ".Model");
@@ -70,7 +59,7 @@
 
         }
         this.GetPresenterValue = function (fullName) {
-            
+
             try {
                 var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
                 var output = undefined;
@@ -81,22 +70,37 @@
             }
         };
         this.SetPresenterValue = function (fullName, val) {
-            
+
             try {
                 var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
                 eval(evalStr + " = val");
-                
+                return GetPresenterValue(fullName);
+
             } catch (err) {
-                console.log(err);
             }
         };
         this.ShouldBeObservableArray = function (obj) {
             return a.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
         }
         this.AddedProperties = [];
-        this.AddProperty = function(nm, val) {
+        this.AddProperty = function (nm, val) {
             ts[nm] = val;
             ts.AddedProperties.push(nm);
+        }
+        this.Eval = function (str, obj) {
+            try {
+                var output = undefined;
+                var fullstring = ts.GetPresenterBasedEvalString("ts", str);
+                if (!a.IsUndefinedOrNull) {
+                    ts.DomHelper.each(obj, function(toBeReplaced) {
+                        fullstring = a.ReplaceAll(fullstring, toBeReplaced, "obj[" + toBeReplaced + "]");
+                    });
+                }
+                eval("output = " + fullstring);
+                return output;
+            } catch (err) {
+                return undefined;
+            }
         }
 
         // observe and object
@@ -215,9 +219,6 @@
 
             });
 
-            // now run other stuff
-            ts.RunConditionals();
-
         }
         this.ConvertToObservableArray = function (fullname, arr) {
 
@@ -235,28 +236,28 @@
 
 
         // initialize dom
-        this.InitializeDom = function (domContext) {
+        this.InitializeDom = function(domContext) {
 
             // look at presenters
-            ts.DomHelper.each(a.PresenterPlugins, function (pluginName, plugin) {
+            ts.DomHelper.each(a.PresenterPlugins, function(pluginName, plugin) {
 
                 // vars
                 var nmLower = pluginName.toLowerCase();
-                var attrName = "an-" + nmLower;
+                var attrName = plugin.attrName;
                 var selector = "[" + attrName + "]";
 
                 // inspect dom
-                domContext.find(selector).each(function (i, el) {
+                domContext.find(selector).each(function(i, el) {
 
                     // jQuery el
                     var jEl = ts.DomHelper(el);
 
                     // attrs
                     var opts = {};
-                    ts.DomHelper.each(el.attributes, function (ai, attr) {
+                    ts.DomHelper.each(el.attributes, function(ai, attr) {
                         var fv = ts.GetFullName(attr.value);
-                        if (a.StartsWith(attr.name, "an-" + nmLower) && attr.name !== "an-" + nmLower) {
-                            opts[attr.name.replace("an-" + nmLower + "-", "")] = fv;
+                        if (a.StartsWith(attr.name, attrName) && attr.name !== attrName) {
+                            opts[attr.name.replace(attrName, "")] = fv;
                         }
                     });
 
@@ -265,7 +266,7 @@
 
                     // set wrapperPropName in opts
                     if (!(a.IsUndefinedOrNull(foundPlugin.wrapperProp))) {
-                        var finalVal = ts.GetFullName(jEl.attr("an-" + nmLower));
+                        var finalVal = ts.GetFullName(jEl.attr(attrName));
                         opts[foundPlugin.wrapperProp] = finalVal;
                     }
 
@@ -276,64 +277,14 @@
 
             });
 
-            // look at conditionals
-            ts.DomHelper.each(a.PresenterConditionals, function (cdName, cd) {
-
-                // vars
-                var nmLower = cdName.toLowerCase();
-                var attrName = "an-" + nmLower;
-                var selector = "[" + attrName + "]";
-
-                // inspect dom
-                domContext.find(selector).each(function (i, el) {
-
-                    // jQuery el
-                    var jEl = ts.DomHelper(el);
-
-                    // attrs
-                    var evalStr = ts.GetPresenterBasedEvalString("ts", jEl.attr("an-" + nmLower));
-                    var evalBoolFunc;
-                    var finalEvalStr = "evalBoolFunc = function(){" +
-                        "return " + evalStr + " || false;" +
-                        "};";
-                    eval(finalEvalStr);
-
-                    ts.PresenterConditionals.push({ name: cdName, element: jEl, boolCallback: evalBoolFunc, conditional: cd });
-
-                });
-
-            });
-
         }
-
-        // run conditionals
-        this.RunConditionals = function () {
-
-            // look for conditionals
-            ts.PresenterConditionals.forEach(function (cd) {
-
-                var res = cd.boolCallback();
-                cd.conditional(cd.element, res);
-
-            });
-
-
-        };
-
-
-
-        // conditionals
-        this.PresenterConditionals = [];
-
 
 
         // get service
         this.GetService = function (svcName) {
             return a.GetService(svcName);
         }
-
-
-
+        
         // raise event
         this.RaiseEvent = function (evName, obj) {
             a.RaiseEvent(evName, obj);
@@ -350,11 +301,7 @@
 
         // plugins
         this.Plugins = new a.PluginWrapper(ts);
-
-
-        // conditionals
-        this.Conditionals = new a.ConditionalsWrapper(ts);
-
+        
     };
 
 
