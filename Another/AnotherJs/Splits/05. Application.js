@@ -114,21 +114,16 @@
         }
 
         // plugins
-        this.AddPresenterPlugin = function (name, wrapperProp, callback) {
-
-            if (typeof wrapperProp === "function") {
-                callback = wrapperProp;
-                wrapperProp = undefined;
-            }
+        this.AddPlugin = function (name, callback) {
 
             // check
-            if (a.PresenterPlugins[name] !== undefined) {
+            if (a.Plugins[name] !== undefined) {
                 throw new Error("PresenterPlugin '" + name + "' already exists.");
             }
 
             // callback
-            a.PresenterPlugins[name] = {
-                wrapperProp: wrapperProp, callback: callback, attrName: a.GetAttributeName(name)
+            a.Plugins[name] = {
+                callback: callback, attrName: a.GetAttributeName(name)
             };
 
             //

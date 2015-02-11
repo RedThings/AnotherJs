@@ -71,6 +71,10 @@
     a.StripWhitespace=function(str) {
         return str.replace(/ /g, '');
     },
+    a.Trim = function (str) {
+        return str.trim();
+        //return str.replace(/^\s+|\s+$/g, '');
+    }
     a.GetAttributeName=function(str) {
         var output = str.replace(/([A-Z])/g, '-$1').toLowerCase();
         return output.substr(0,1)==="-" ? a.StripFirst(output) : output;

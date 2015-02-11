@@ -20,7 +20,7 @@ var theData = [
         // set data
         data.Persons = theData;
         ui.ShowSomething = false;
-        
+        model.Text = "You've changed something";
 
         // click/submit
         model.SubmitForm = function (e, el) {
@@ -31,6 +31,7 @@ var theData = [
         }
         model.ChangeSomething = function(e, el) {
             data.Persons[1].Id = 1231456;
+            model.Changed = true;
         }
 
     });
@@ -48,25 +49,25 @@ var theData = [
 
         // set repeater
         presenter.Plugins.AnRepeater("#person_grid_row", {
-            data: "row in {Data}.Persons",
+            main: "row in {Data}.Persons",
             onRowBinding: "{Model}.BindRepeaterRow()"
         });
 
         // set test buttons etc
         presenter.Plugins.AnSubmit("#the_form", {
-            onsubmit: "{Ui}.Submit()"
+            main: "{Ui}.Submit()"
         });
         presenter.Plugins.AnClick("#btnClick", {
-            onclick: "{Ui}.ClickMe()"
+            main: "{Ui}.ClickMe()"
         });
         presenter.Plugins.AnClick("#btnShowHide", {
-            onclick: "{Ui}.ShowSomething = !{Ui}.ShowSomething;"
+            main: "{Ui}.ShowSomething = !{Ui}.ShowSomething;"
         });
-        presenter.Plugins.AnIftext("#btnShowHide", {
-            condition: "{Ui}.ShowSomething ? 'Hide':'Show'"
+        presenter.Plugins.AnIf("#btnShowHide", {
+            main: "{Ui}.ShowSomething ? 'Hide me':'Show me'"
         });
         presenter.Plugins.AnShow("#h1Shown", {
-            condition: "{Ui}.ShowSomething"
+            main: "{Ui}.ShowSomething"
         });
 
         ui.ShowSomething = false;

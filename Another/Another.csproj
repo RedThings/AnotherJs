@@ -66,8 +66,8 @@
     <Content Include="AnotherJs\Splits\06. Presenter.js" />
     <Content Include="AnotherJs\Splits\07. Wrappers.js" />
     <Content Include="AnotherJs\Splits\10. ServicesAndDependencies.Js" />
-    <Content Include="Content\An\Apps\AnotherDemosApp.js" />
-    <Content Include="Content\An\Presenters\PersonGridEdit.js" />
+    <Content Include="Demos\An\Apps\AnotherDemosApp.js" />
+    <Content Include="Demos\An\Presenters\PersonGridEdit.js" />
     <Content Include="Content\bootstrap-theme.css" />
     <Content Include="Content\bootstrap-theme.min.css" />
     <Content Include="Content\bootstrap.css" />

@@ -2,17 +2,17 @@
 
 (function (a) {
 
-    a.PresenterPluginsApp = a.CreateApplication("Another.PresenterPluginsApp");
+    a.PluginsApp = a.CreateApplication("Another.PluginsApp");
     (function (ap) {
 
         // Presenter.Plugins.Model
-        ap.AddPresenterPlugin("AnModel", "model", function (theEl, opts, presenter) {
-
+        ap.AddPlugin("AnModel", function (theEl, opts, presenter) {
+            
             // get value
-            var theVal = presenter.GetPresenterValue(opts.model);
+            var theVal = presenter.GetPresenterValue(opts.main);
 
             // change
-            presenter.ObserveChange(opts.model, function (newVal) {
+            presenter.ObserveChange(opts.main, function (newVal) {
 
                 // set
                 if (theEl.data("change_from_element") !== true) {
@@ -47,14 +47,15 @@
             // bind
             theEl.bind("change", function (e) {
                 theEl.data("change_from_element", true);
-                presenter.SetPresenterValue(opts.model, theEl.val());
+                presenter.SetPresenterValue(opts.main, theEl.val());
             });
             if (evName !== undefined) {
                 theEl.bind(evName, function (e) {
                     theEl.data("change_from_element", true);
-                    presenter.SetPresenterValue(opts.model, theEl.val());
+                    presenter.SetPresenterValue(opts.main, theEl.val());
                 });
             }
+            
 
             // init
             theEl.html(theVal);
@@ -63,20 +64,20 @@
         });
 
         // Presenter.Plugins.Click
-        ap.AddPresenterPlugin("AnClick", "onclick", function (theEl, opts, presenter) {
+        ap.AddPlugin("AnClick", function (theEl, opts, presenter) {
 
             // on click
             theEl.on("click", presenter.Container, function (e) {
 
                 e.preventDefault();
-                presenter.Eval(opts.onclick, { "{e}": e, "{el}": theEl });
+                presenter.Eval(opts.main, { "{e}": e, "{el}": theEl });
 
             });
 
         });
 
         // Presenter.Plugins.Submit
-        ap.AddPresenterPlugin("AnSubmit", "onsubmit", function (theForm, opts, presenter) {
+        ap.AddPlugin("AnSubmit", function (theForm, opts, presenter) {
 
             theForm.each(function (i, chld) {
                 var child = presenter.DomHelper(chld);
@@ -88,7 +89,7 @@
             theForm.submit(function (e) {
 
                 e.preventDefault();
-                presenter.Eval(opts.onsubmit, { "{e}": e, "{el}": theForm });
+                presenter.Eval(opts.main, { "{e}": e, "{el}": theForm });
                 return false;
 
             });
@@ -96,57 +97,58 @@
         });
 
         // IfText
-        ap.AddPresenterPlugin("AnIftext", "condition", function (element, opts, presenter) {
-
+        ap.AddPlugin("AnIf", function (element, opts, presenter) {
+            
             // from html
-            var spltLeft = opts.condition.split("?");
+            var spltLeft = opts.main.split("?");
             opts.propName = a.StripWhitespace(spltLeft[0]);
             var spltRight = spltLeft[1].split(':');
-            opts.trueState = a.StripWhitespace(spltRight[0]);
-            opts.trueState = a.ReplaceAll(opts.trueState, "'", "");
-            opts.trueState = a.ReplaceAll(opts.trueState, "\"", "");
-            opts.falseState = a.StripWhitespace(spltRight[1]).replace("'", "").replace("\"", "");
-            opts.falseState = a.ReplaceAll(opts.falseState, "'", "");
-            opts.falseState = a.ReplaceAll(opts.falseState, "\"", "");
-
+            opts.trueState = presenter.Eval(a.Trim(spltRight[0]));
+            opts.falseState = presenter.Eval(a.Trim(spltRight[1]));
+            
             // now add observe
             presenter.ObserveChange(opts.propName, function (newVal) {
                 var txt = newVal === true ? opts.trueState : opts.falseState;
                 element.html(txt);
+                element.val(txt);
             });
+
+            // init
+            element.html(opts.falseState);
+            element.val(opts.falseState);
 
         });
 
         // show
-        ap.AddPresenterPlugin("AnShow", "condition", function(element, opts, presenter) {
+        ap.AddPlugin("AnShow", function (element, opts, presenter) {
 
-            presenter.ObserveChange(opts.condition, function(newVal) {
+            presenter.ObserveChange(opts.main, function (newVal) {
 
                 if (newVal === true) {
                     element.show();
                 } else {
                     element.hide();
                 }
-                
+
             });
 
         });
 
         // enable
-        ap.AddPresenterPlugin("AnEnable", "condition", function (element, opts, presenter) {
-            
-            presenter.ObserveChange(opts.condition, function (newVal) {
+        ap.AddPlugin("AnEnable", function (element, opts, presenter) {
+
+            presenter.ObserveChange(opts.main, function (newVal) {
                 if (newVal === true) {
                     element.removeAttr("disabled");
                 } else {
-                    element.attr("disabled","disabled");
+                    element.attr("disabled", "disabled");
                 }
             });
 
         });
 
         // Presenter.Plugins.Repeater
-        ap.AddPresenterPlugin("AnRepeater", "data", function (element, opts, presenter) {
+        ap.AddPlugin("AnRepeater", function (element, opts, presenter) {
 
             // create repeater
             var rpt = new ap.Repeater(element, opts, presenter);
@@ -175,7 +177,7 @@
 
                 // set data
                 ts.Data = undefined;
-                var splt = opts.data.split(" ");
+                var splt = opts.main.split(" ");
                 if (splt[1] !== "in")
                     throw new Error("Repeater options.data must be in the format '[alias] in [property]'");
                 ts.RowAlias = splt[0];
@@ -427,6 +429,6 @@
             }
         };
 
-    })(a.PresenterPluginsApp);
+    })(a.PluginsApp);
 
 })(Another);

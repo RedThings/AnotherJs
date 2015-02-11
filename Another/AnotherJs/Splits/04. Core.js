@@ -24,7 +24,7 @@
     a.Presenters = {};
 
     // plugins
-    a.PresenterPlugins = {};
+    a.Plugins = {};
 
     // Initialize presenter
     a.InitializePresenter = function (name, container, mdl, preCallback, callback) {
@@ -109,11 +109,11 @@
 
         // add plugins to prototype
         var addPluginCounter = 0;
-        var pluginKeys = Object.keys(a.PresenterPlugins);
+        var pluginKeys = Object.keys(a.Plugins);
         var addPlugins = function () {
 
             var nm = pluginKeys[addPluginCounter];
-            var plugin = a.PresenterPlugins[nm];
+            var plugin = a.Plugins[nm];
             a.PluginWrapper.prototype[nm] = function (selector, opts) {
 
                 // plugins

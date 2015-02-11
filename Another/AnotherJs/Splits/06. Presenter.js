@@ -91,7 +91,7 @@
             try {
                 var output = undefined;
                 var fullstring = ts.GetPresenterBasedEvalString("ts", str);
-                if (!a.IsUndefinedOrNull) {
+                if (!a.IsUndefinedOrNull(obj)) {
                     ts.DomHelper.each(obj, function(toBeReplaced) {
                         fullstring = a.ReplaceAll(fullstring, toBeReplaced, "obj[" + toBeReplaced + "]");
                     });
@@ -237,18 +237,17 @@
 
         // initialize dom
         this.InitializeDom = function(domContext) {
-
+            
             // look at presenters
-            ts.DomHelper.each(a.PresenterPlugins, function(pluginName, plugin) {
-
+            ts.DomHelper.each(a.Plugins, function(pluginName, plugin) {
+                
                 // vars
-                var nmLower = pluginName.toLowerCase();
                 var attrName = plugin.attrName;
                 var selector = "[" + attrName + "]";
 
                 // inspect dom
                 domContext.find(selector).each(function(i, el) {
-
+                    
                     // jQuery el
                     var jEl = ts.DomHelper(el);
 
@@ -261,14 +260,9 @@
                         }
                     });
 
-                    // find the plugin object in global list
-                    var foundPlugin = a.PresenterPlugins[pluginName];
-
                     // set wrapperPropName in opts
-                    if (!(a.IsUndefinedOrNull(foundPlugin.wrapperProp))) {
-                        var finalVal = ts.GetFullName(jEl.attr(attrName));
-                        opts[foundPlugin.wrapperProp] = finalVal;
-                    }
+                    var finalVal = ts.GetFullName(jEl.attr(attrName));
+                    opts.main = finalVal;
 
                     // call presenter.plugins[pluginName](el, opts)
                     ts.Plugins[pluginName](jEl, opts);

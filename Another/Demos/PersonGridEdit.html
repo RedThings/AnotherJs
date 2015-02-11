@@ -21,11 +21,11 @@
                 </td>
             </tr>
         </table>
-        <form an-submit="{Presenter}.SubmitForm({e}, {el})">
+        <form an-submit="{Model}.SubmitForm({e}, {el})">
             <button class="btn btn-default" type="button" an-click="{Model}.ClickMe({e}, {el})">Click</button>
             <button class="btn btn-default" type="submit">Submit</button>
-            <button class="btn btn-default" type="button" an-iftext="{Ui}.ShowSomething ? 'Hide':'Show'" an-click="{Ui}.ShowSomething = !{Ui}.ShowSomething"></button>
-            <button an-click="{Model}.ChangeSomething()" type="button"></button>
+            <button class="btn btn-default" type="button" an-if="{Ui}.ShowSomething ? 'Hide':'Show'" an-click="{Ui}.ShowSomething = !{Ui}.ShowSomething"></button>
+            <button class="btn btn-default" an-click="{Model}.ChangeSomething()" an-if="{Model}.Changed ? {Model}.Text : 'Change something'" type="button"></button>
             <h1 an-show="{Ui}.ShowSomething">I'M SHOWN</h1>
         </form>
     </div>
@@ -65,10 +65,10 @@
     <script src="../AnotherJs/Splits/12. Plugins.js"></script>
 
     <!--APPS-->
-    <script src="../Content/An/Apps/AnotherDemosApp.js"></script>
+    <script src="An/Apps/AnotherDemosApp.js"></script>
 
     <!-- PRESENTERS -->
-    <script src="../Content/An/Presenters/PersonGridEdit.js"></script>
+    <script src="An/Presenters/PersonGridEdit.js"></script>
 
     <!-- INIT -->
     <script>
