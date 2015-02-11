@@ -34,32 +34,26 @@
 
         // helpers
         this.GetFullName = function (str) {
+
             if (a.StringIsNullOrEmpty(str)) throw new Error("Presenter.GetFullName: str cannot be undefined, null or empty");
             str = a.ReplaceAll(str, "{Model}", "Model");
             str = a.ReplaceAll(str, "{Ui}", "Model.Ui");
             str = a.ReplaceAll(str, "{Data}", "Model.Data");
             str = a.ReplaceAll(str, "{Form}", "Model.Form");
+
+            // var with props
+            ts.AddedProperties.forEach(function (addedProp) {
+                str = a.ReplaceAll(str, "{" + addedProp + "}", addedProp);
+            });
+
             return str;
         }
         this.GetPresenterBasedEvalString = function (presenterAlias, str) {
 
-            // simple
-            var replaced = ts.GetFullName(str);
-            var output = a.ReplaceAll(replaced, "Model", presenterAlias + ".Model");
-            if (a.StartsWith(output, ".")) return presenterAlias + output;
-
-            // var with props
-            var chnk1 = output.split(".")[0];
-            var isAddedProp = ts.AddedProperties.filter(function (pr) { return pr === chnk1; }).length > 0;
-            if (isAddedProp)
-                return presenterAlias + "." + output;
-
-            // finally
-            return output;
+            return presenterAlias + "." + ts.GetFullName(str);
 
         }
         this.GetPresenterValue = function (fullName) {
-
             try {
                 var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
                 var output = undefined;
@@ -89,17 +83,26 @@
         }
         this.Eval = function (str, obj) {
             try {
+                var addBang = false;
+                if (a.StartsWith(str, "!")) {
+                    addBang = true;
+                    str = str.substr(1);
+                }
                 var output = undefined;
                 var fullstring = ts.GetPresenterBasedEvalString("ts", str);
                 if (!a.IsUndefinedOrNull(obj)) {
-                    ts.DomHelper.each(obj, function(toBeReplaced) {
+                    ts.DomHelper.each(obj, function (toBeReplaced) {
                         fullstring = a.ReplaceAll(fullstring, toBeReplaced, "obj[" + toBeReplaced + "]");
                     });
                 }
-                eval("output = " + fullstring);
+                eval("output = " + (addBang ? "!" : "") + fullstring);
                 return output;
             } catch (err) {
-                return undefined;
+                try {
+                    return eval(str);
+                } catch (err2) {
+                    return undefined;
+                }
             }
         }
 
@@ -236,24 +239,24 @@
 
 
         // initialize dom
-        this.InitializeDom = function(domContext) {
-            
+        this.InitializeDom = function (domContext) {
+
             // look at presenters
-            ts.DomHelper.each(a.Plugins, function(pluginName, plugin) {
-                
+            ts.DomHelper.each(a.Plugins, function (pluginName, plugin) {
+
                 // vars
                 var attrName = plugin.attrName;
                 var selector = "[" + attrName + "]";
 
                 // inspect dom
-                domContext.find(selector).each(function(i, el) {
-                    
+                domContext.find(selector).each(function (i, el) {
+
                     // jQuery el
                     var jEl = ts.DomHelper(el);
 
                     // attrs
                     var opts = {};
-                    ts.DomHelper.each(el.attributes, function(ai, attr) {
+                    ts.DomHelper.each(el.attributes, function (ai, attr) {
                         var fv = ts.GetFullName(attr.value);
                         if (a.StartsWith(attr.name, attrName) && attr.name !== attrName) {
                             opts[attr.name.replace(attrName, "")] = fv;
@@ -278,7 +281,7 @@
         this.GetService = function (svcName) {
             return a.GetService(svcName);
         }
-        
+
         // raise event
         this.RaiseEvent = function (evName, obj) {
             a.RaiseEvent(evName, obj);
@@ -295,7 +298,7 @@
 
         // plugins
         this.Plugins = new a.PluginWrapper(ts);
-        
+
     };
 
 

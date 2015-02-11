@@ -7,7 +7,7 @@
 
         // Presenter.Plugins.Model
         ap.AddPlugin("AnModel", function (theEl, opts, presenter) {
-            
+
             // get value
             var theVal = presenter.GetPresenterValue(opts.main);
 
@@ -55,7 +55,7 @@
                     presenter.SetPresenterValue(opts.main, theEl.val());
                 });
             }
-            
+
 
             // init
             theEl.html(theVal);
@@ -98,14 +98,14 @@
 
         // IfText
         ap.AddPlugin("AnIf", function (element, opts, presenter) {
-            
+
             // from html
             var spltLeft = opts.main.split("?");
             opts.propName = a.StripWhitespace(spltLeft[0]);
             var spltRight = spltLeft[1].split(':');
             opts.trueState = presenter.Eval(a.Trim(spltRight[0]));
             opts.falseState = presenter.Eval(a.Trim(spltRight[1]));
-            
+
             // now add observe
             presenter.ObserveChange(opts.propName, function (newVal) {
                 var txt = newVal === true ? opts.trueState : opts.falseState;
@@ -121,9 +121,9 @@
 
         // show
         ap.AddPlugin("AnShow", function (element, opts, presenter) {
-
-            presenter.ObserveChange(opts.main, function (newVal) {
-
+            var name = a.StartsWith(opts.main, "!") ? opts.main.substr(1) : opts.main;
+            presenter.ObserveChange(name, function () {
+                var newVal = presenter.Eval(opts.main);
                 if (newVal === true) {
                     element.show();
                 } else {
@@ -131,13 +131,21 @@
                 }
 
             });
-
+            
+            if (presenter.Eval(opts.main) === true) {
+                element.show();
+            } else {
+                element.hide();
+            }
         });
 
         // enable
         ap.AddPlugin("AnEnable", function (element, opts, presenter) {
 
-            presenter.ObserveChange(opts.main, function (newVal) {
+            var name = a.StartsWith(opts.main, "!") ? opts.main.substr(1) : opts.main;
+            
+            presenter.ObserveChange(name, function () {
+                var newVal = presenter.Eval(opts.main);
                 if (newVal === true) {
                     element.removeAttr("disabled");
                 } else {
@@ -145,7 +153,53 @@
                 }
             });
 
+            if (presenter.Eval(opts.main) === true) {
+                element.removeAttr("disabled");
+            } else {
+                element.attr("disabled", "disabled");
+            }
+
         });
+
+        // attrs
+        ["Href", "Title","Target"]
+            .forEach(function (attr) {
+                ap.AddPlugin("AnAttr" + attr, function (element, opts, presenter) {
+                    bindAttrPlugin(attr.toLowerCase(), element, opts, presenter);
+                });
+            });
+        var bindAttrPlugin = function (attr, element, opts, presenter) {
+
+            // get replace chunks
+            var matches = [];
+            var match;
+            while ((match = a.BracketMatcher.exec(opts.main))) {
+                matches.push(match);
+            }
+
+            // loop
+            matches.forEach(function (m) {
+
+                presenter.ObserveChange(m[1], function () {
+
+                    replaceAttr(attr, element, matches, opts.main, presenter);
+
+                });
+
+            });
+
+            // go
+            replaceAttr(attr, element, matches, opts.main, presenter);
+
+        };
+        var replaceAttr = function (attr, el, matches, origVal, presenter) {
+            var attrVal = origVal;
+            matches.forEach(function (m) {
+                var theValue = presenter.Eval(m[1]);
+                attrVal = a.ReplaceAll(attrVal, m[0], a.IsUndefinedOrNull(theValue) ? "" : theValue);
+            });
+            el.attr(attr, attrVal);
+        }
 
         // Presenter.Plugins.Repeater
         ap.AddPlugin("AnRepeater", function (element, opts, presenter) {

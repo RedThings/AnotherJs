@@ -16,9 +16,10 @@ var AnotherDemosApp = Another.CreateApplication("AnotherDemosApp");
 
         });
     });
-    app.OnApplicationRun(function () {
-        "App run"; 
-        app.InitializePresenter("PersonGridEdit2", "#person_grid_edit");
-    });
+    //app.OnApplicationRun(function () {
+    //    "App run"; 
+    //    app.InitializePresenter("PersonGridEdit2", "#person_grid_edit");
+    //});
+    app.OnApplicationEnd(function () { console.log("App ended"); })
 
 })(AnotherDemosApp,Another);

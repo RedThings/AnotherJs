@@ -78,7 +78,8 @@
     a.GetAttributeName=function(str) {
         var output = str.replace(/([A-Z])/g, '-$1').toLowerCase();
         return output.substr(0,1)==="-" ? a.StripFirst(output) : output;
-    }
+    },
+    a.BracketMatcher = /\[(.*?)\]/g;
 
 })(Another);
 
