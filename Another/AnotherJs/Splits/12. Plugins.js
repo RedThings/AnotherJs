@@ -54,11 +54,6 @@
                 presenter.EvalSet(opts.main, nuVal);
             });
 
-
-            // init
-            theEl.html(theVal);
-            theEl.val(theVal);
-
         });
 
         // Presenter.Plugins.Click
@@ -112,10 +107,7 @@
                 element.val(txt);
             });
 
-            // init
-            element.html(opts.falseState);
-            element.val(opts.falseState);
-
+            
         });
 
         // show
@@ -132,12 +124,7 @@
                 }
 
             });
-            
-            if (presenter.Eval(opts.main) === true) {
-                element.show();
-            } else {
-                element.hide();
-            }
+           
         });
 
         // enable
@@ -154,11 +141,7 @@
                 }
             });
 
-            if (presenter.Eval(opts.main) === true) {
-                element.removeAttr("disabled");
-            } else {
-                element.attr("disabled", "disabled");
-            }
+            
 
         });
 

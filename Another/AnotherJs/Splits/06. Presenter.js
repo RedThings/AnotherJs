@@ -274,13 +274,19 @@
 
         }
         this.ObserveChange = function (fullname, changeFunc) {
-            
+
+            if (a.StringIsNullOrEmpty(fullname) || !a.IsFunc(changeFunc)) return;
+
             // get chunks
             var chunks = ts.SplitAliasedString(fullname, false);
             //loop
             chunks.forEach(function(ch) {
                 _changeObservers.push({ fullName: ch, changeFunc: changeFunc });
             });
+
+            // go once!
+            var initVal = ts.Eval(fullname);
+            changeFunc(initVal);
         }
         var _changeObservers = [];
 
