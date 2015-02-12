@@ -7,18 +7,20 @@
 
         // Presenter.Plugins.Model
         ap.AddPlugin("AnModel", function (theEl, opts, presenter) {
-
+            
             // get value
-            var theVal = presenter.GetPresenterValue(opts.main);
+            var theVal = presenter.Eval(opts.main);
 
             // change
             presenter.ObserveChange(opts.main, function (newVal) {
-
+                
                 // set
                 if (theEl.data("change_from_element") !== true) {
                     theEl.html(newVal);
                     theEl.val(newVal);
+
                 } else {
+
                     theEl.data("change_from_element", false);
                 }
 
@@ -39,22 +41,18 @@
                         break;
                     }
                 default:
+                    evName = "change";
                     break;
 
             }
 
 
             // bind
-            theEl.bind("change", function (e) {
+            theEl.bind(evName, function (e) {
+                var nuVal = theEl.val();
                 theEl.data("change_from_element", true);
-                presenter.SetPresenterValue(opts.main, theEl.val());
+                presenter.EvalSet(opts.main, nuVal);
             });
-            if (evName !== undefined) {
-                theEl.bind(evName, function (e) {
-                    theEl.data("change_from_element", true);
-                    presenter.SetPresenterValue(opts.main, theEl.val());
-                });
-            }
 
 
             // init
@@ -68,7 +66,7 @@
 
             // on click
             theEl.on("click", presenter.Container, function (e) {
-
+                
                 e.preventDefault();
                 presenter.Eval(opts.main, { "{e}": e, "{el}": theEl });
 
@@ -105,9 +103,10 @@
             var spltRight = spltLeft[1].split(':');
             opts.trueState = presenter.Eval(a.Trim(spltRight[0]));
             opts.falseState = presenter.Eval(a.Trim(spltRight[1]));
-
+            
             // now add observe
             presenter.ObserveChange(opts.propName, function (newVal) {
+                
                 var txt = newVal === true ? opts.trueState : opts.falseState;
                 element.html(txt);
                 element.val(txt);
@@ -121,8 +120,10 @@
 
         // show
         ap.AddPlugin("AnShow", function (element, opts, presenter) {
-            var name = a.StartsWith(opts.main, "!") ? opts.main.substr(1) : opts.main;
+
+            var name = opts.main;
             presenter.ObserveChange(name, function () {
+                
                 var newVal = presenter.Eval(opts.main);
                 if (newVal === true) {
                     element.show();
@@ -142,7 +143,7 @@
         // enable
         ap.AddPlugin("AnEnable", function (element, opts, presenter) {
 
-            var name = a.StartsWith(opts.main, "!") ? opts.main.substr(1) : opts.main;
+            var name = opts.main;
             
             presenter.ObserveChange(name, function () {
                 var newVal = presenter.Eval(opts.main);
@@ -235,10 +236,13 @@
                 if (splt[1] !== "in")
                     throw new Error("Repeater options.data must be in the format '[alias] in [property]'");
                 ts.RowAlias = splt[0];
-                ts.FullName = presenter.GetFullName(splt[2]);
+                ts.FullName = splt[2];
                 ts.Data = presenter.Eval(ts.FullName);
-
+                
                 // do checks
+                if (a.IsUndefinedOrNull(ts.Data)) {
+                    throw new Error(ts.FullName + " does not exist");
+                }
                 if (ts.Data.toString() !== "Another.ObservableArray") {
                     if (a.IsArray(ts.Data)) {
                         presenter.ConvertToObservableArray(ts.FullName, ts.Data);
@@ -340,20 +344,35 @@
                 // create presenter
                 var pName = ts.CreatePresenter();
 
-                // get model
-                var mdl = ts.Presenter.Model;
-
                 // indx
-                ap.InitializePresenter(pName, newEl, mdl, function (p) {
-
-                    p.AddProperty(ts.RowAlias, rowVal);
+                ap.InitializePresenter(pName, newEl, function (p) {
+                    
+                    p.Aliases = a.Clone(ts.Presenter.Aliases);
+                    p.Aliases.forEach(function(alias) {
+                        eval("p." + alias.str + " = ts.Presenter." + alias.str);
+                    });
+                    p[ts.RowAlias] = rowVal;
+                    p.AddAlias(ts.RowAlias, ts.RowAlias);
                     p.Observe(ts.RowAlias);
+                    p[ts.RowAlias].ReApply = function (newObj, func) {
+                        
+                        // Do something here
+                        ts.Presenter.DomHelper.each(newObj, function (key, val) {
+                            p[ts.RowAlias][key] = val;
+                        });
+
+                        // callback
+                        if (a.IsFunc(func)) {
+                            func(ts.Eval(str));
+                        }
+                    }
+
 
                 }, function (p) {
 
                     // fire binding
                     ts.OnRowBinding(newEl, rowVal, p);
-
+                    
                     // show
                     newEl.show();
 

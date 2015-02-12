@@ -3,20 +3,23 @@
 (function (a) {
 
     // presenter class
-    a.AnotherPresenter = function (name, model, container) {
+    a.AnotherPresenter = function (name, container) {
 
         // this
         var ts = this;
 
-        // check
-        if (a.IsUndefinedOrNull(container) || container.length < 1)
-            throw new Error("Presenter: container must be at least one element");
+        //
+        this.Name = name;
+
+        // container
+        this.Container = container;
 
         // dom helper
         this.DomHelper = a.GetDependency("DomHelper");
 
-        // container
-        this.Container = container;
+        // check
+        if (a.IsUndefinedOrNull(container) || container.length < 1)
+            throw new Error("Presenter: container must be at least one element");
 
         // element
         this.Element = function (selector) {
@@ -27,122 +30,161 @@
             return output;
         }
 
-        // model
-        this.Model = model;
-
-
-
         // helpers
-        this.GetFullName = function (str) {
-
-            if (a.StringIsNullOrEmpty(str)) throw new Error("Presenter.GetFullName: str cannot be undefined, null or empty");
-            str = a.ReplaceAll(str, "{Model}", "Model");
-            str = a.ReplaceAll(str, "{Ui}", "Model.Ui");
-            str = a.ReplaceAll(str, "{Data}", "Model.Data");
-            str = a.ReplaceAll(str, "{Form}", "Model.Form");
-
-            // var with props
-            ts.AddedProperties.forEach(function (addedProp) {
-                str = a.ReplaceAll(str, "{" + addedProp + "}", addedProp);
-            });
-
-            return str;
-        }
-        this.GetPresenterBasedEvalString = function (presenterAlias, str) {
-
-            return presenterAlias + "." + ts.GetFullName(str);
-
-        }
-        this.GetPresenterValue = function (fullName) {
-            try {
-                var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
-                var output = undefined;
-                eval("output = " + evalStr + ";");
-                return output;
-            } catch (err) {
-                return undefined;
-            }
-        };
-        this.SetPresenterValue = function (fullName, val) {
-
-            try {
-                var evalStr = ts.GetPresenterBasedEvalString("ts", fullName);
-                eval(evalStr + " = val");
-                return GetPresenterValue(fullName);
-
-            } catch (err) {
-            }
-        };
         this.ShouldBeObservableArray = function (obj) {
             return a.IsArray(obj) && obj.toString() !== "Another.ObservableArray";
         }
-        this.AddedProperties = [];
-        this.AddProperty = function (nm, val) {
-            ts[nm] = val;
-            ts.AddedProperties.push(nm);
+        this.Aliases = [];
+        this.AddAlias = function (alias, realValStr) {
+            
+            // add
+            alias = "{" + alias + "}";
+
+            // add to collection
+            ts.Aliases.push({ alias: alias, str: realValStr });
+
         }
-        this.Eval = function (str, obj) {
+        this.Eval = function (str, obj, spltStringArr) {
+            
+            // set str
+            str = ts.GetUnaliasedString(str, obj, spltStringArr);
+
+            // output
+            var output = undefined;
+
+            // try evals
             try {
-                var addBang = false;
-                if (a.StartsWith(str, "!")) {
-                    addBang = true;
-                    str = str.substr(1);
-                }
-                var output = undefined;
-                var fullstring = ts.GetPresenterBasedEvalString("ts", str);
-                if (!a.IsUndefinedOrNull(obj)) {
-                    ts.DomHelper.each(obj, function (toBeReplaced) {
-                        fullstring = a.ReplaceAll(fullstring, toBeReplaced, "obj[" + toBeReplaced + "]");
-                    });
-                }
-                eval("output = " + (addBang ? "!" : "") + fullstring);
-                return output;
+                eval("output = " + str);
             } catch (err) {
-                try {
-                    return eval(str);
-                } catch (err2) {
-                    return undefined;
-                }
+                if (window.location.toString().indexOf("localhost") > -1)
+                    console.log("Error evaluating " + str + ": ",err);
             }
+
+            // 
+            return output;
+
+        }
+        this.EvalSet=function(str, val) {
+            
+            str = ts.GetUnaliasedString(str);
+            try {
+                eval(str + " = val;");
+            } catch (err) {
+                if (window.location.toString().indexOf("localhost") > -1)
+                    console.log("Error evaluating " + str);// + ": ",err);
+            }
+        }
+        this.GetUnaliasedString = function (str, obj, spltStringArr) {
+            
+            // check
+            var includeMethods = false;
+            if (str.indexOf("(") > -1 && str.indexOf(")") > -1) {
+                includeMethods = true;
+            }
+
+            // sort params
+            if (spltStringArr === undefined && a.IsArray(obj)) {
+                spltStringArr = obj;
+                obj = undefined;
+            }
+            if (spltStringArr === undefined) {
+                spltStringArr = ts.SplitAliasedString(str, includeMethods);
+            }
+
+            // now find and replace chunks with ts
+            // ReSharper disable once QualifiedExpressionMaybeNull
+            spltStringArr.forEach(function (match) {
+                str = a.ReplaceAll(str, match, "ts." + match);
+            });
+
+
+            // now replace aliases
+            ts.Aliases.forEach(function (alias) {
+
+                str = a.ReplaceAll(str, alias.alias, alias.str);
+
+            });
+
+            // now loop obj
+            if (!a.IsUndefinedOrNull(obj) && typeof obj === "object") {
+                ts.DomHelper.each(obj, function (key) {
+                    str = a.ReplaceAll(str, key, "obj[" + key + "]");
+                });
+            }
+
+            return str;
+
+        };
+        this.SplitAliasedString = function (str, includeMethods) {
+
+            // example '{Model}.ShowSomething != {Data}.FuckOff || false'
+            // should return ["{Model}.ShowSomething","{Data}.FuckOff"]
+            // str = '{Model}.ShowSomething != {Data}.FuckOff || false';
+
+
+            // loop aliases
+            var match;
+            var matcher;
+            var matches = [];
+            ts.Aliases.forEach(function (aliasObj) {
+
+                matcher = new RegExp(aliasObj.alias + (includeMethods ? "[^\s\*\/%!=|+-]*" : "[^(\s\*\/%!=|+-]*"));
+                match = matcher.exec(str);
+                if (!a.IsUndefinedOrNull(match)) {
+                    matches.push(match);
+                }
+
+
+            });
+            return matches.map(function (m) {
+                return m[0];
+            });
         }
 
         // observe and object
-        this.Observe = function (preOrFullName) {
+        this.Observe = function (aliasedName) {
+            if (aliasedName.indexOf("{") < 0 || aliasedName.indexOf("}") < 0) {
+                aliasedName = a.ReplaceAll(aliasedName, "{", "");
+                aliasedName = a.ReplaceAll(aliasedName, "}", "");
+                aliasedName = "{" + aliasedName + "}";
+            }
+            // get object strings
+            var objStrings = ts.SplitAliasedString(aliasedName);
 
-            // get full name
-            var fullName = ts.GetFullName(preOrFullName);
+            // loop
+            objStrings.forEach(function (str) {
+                
+                // get obj
+                var obj = ts.Eval(str, objStrings);
 
-            // get object
-            var obj = ts.GetPresenterValue(fullName);
+                // check if exists, then carry on
+                if (!(a.IsUndefinedOrNull(obj) || typeof obj !== "object")) {
 
-            // check if exists, then carry on
-            if (!(a.IsUndefinedOrNull(obj) || typeof obj !== "object")) {
+                    // check
+                    var exists = !a.IsUndefinedOrNull(_alreadyObserving[str]);
+                    if (!exists) {
 
-                // check
-                var exists = !a.IsUndefinedOrNull(_alreadyObserving[fullName]);
-                if (!exists) {
+                        // observe
+                        Object.observe(obj, function (vals) {
+                            onObjectChanged(str, vals);
 
-                    // observe
-                    Object.observe(obj, function (vals) {
+                        });
 
-                        ts.OnObjectChanged(fullName, vals);
+                        // add to observing list
+                        _alreadyObserving[str] = obj;
 
-                    });
+                        // next, check for arrays and other objects
+                        ts.DomHelper.each(obj, function (key, innerObj) {
 
-                    // add to observing list
-                    _alreadyObserving[fullName] = obj;
-                    //console.log("Observing ", fullName);
+                            checkForArraysAndOrObjectsToBind(str, key, innerObj);
 
-                    // next, check for arrays and other objects
-                    ts.DomHelper.each(obj, function (key, innerObj) {
+                        });
 
-                        checkForArraysAndOrObjectsToBind(fullName, key, innerObj);
-
-                    });
+                    }
 
                 }
 
-            }
+            });
 
 
 
@@ -178,12 +220,11 @@
             }
 
         }
-        this.OnObjectChanged = function (fullName, changedValues) {
-
-
+        var onObjectChanged = function (fullName, changedValues) {
+            
             // add
             changedValues.forEach(function (vl) {
-
+                
                 // new val
                 var newVal = vl.object[vl.name];
 
@@ -208,7 +249,7 @@
                 });
 
                 // find by parent
-                var parentObj = ts.GetPresenterValue(fullName);
+                var parentObj = ts.Eval(fullName);
                 var found2 = _changeObservers.filter(function (co) {
                     return co.fullName == fullName;
                 });
@@ -227,13 +268,19 @@
 
             var newArr = new a.ObservableArray();
             newArr.initialize(fullname, arr);
-            eval(ts.GetPresenterBasedEvalString("ts", fullname) + " = newArr;");
+            ts.EvalSet(fullname,newArr);
+            //eval(ts.GetPresenterBasedEvalString("ts", fullname) + " = newArr;");
             return newArr;
 
         }
         this.ObserveChange = function (fullname, changeFunc) {
-            fullname = ts.GetFullName(fullname);
-            _changeObservers.push({ fullName: fullname, changeFunc: changeFunc });
+            
+            // get chunks
+            var chunks = ts.SplitAliasedString(fullname, false);
+            //loop
+            chunks.forEach(function(ch) {
+                _changeObservers.push({ fullName: ch, changeFunc: changeFunc });
+            });
         }
         var _changeObservers = [];
 
@@ -257,14 +304,13 @@
                     // attrs
                     var opts = {};
                     ts.DomHelper.each(el.attributes, function (ai, attr) {
-                        var fv = ts.GetFullName(attr.value);
                         if (a.StartsWith(attr.name, attrName) && attr.name !== attrName) {
-                            opts[attr.name.replace(attrName, "")] = fv;
+                            opts[attr.name.replace(attrName, "")] = attr.value;
                         }
                     });
 
                     // set wrapperPropName in opts
-                    var finalVal = ts.GetFullName(jEl.attr(attrName));
+                    var finalVal = jEl.attr(attrName);
                     opts.main = finalVal;
 
                     // call presenter.plugins[pluginName](el, opts)
@@ -293,8 +339,6 @@
             a.SubscribeToEvent(evName, func);
             return ts;
         }
-
-
 
         // plugins
         this.Plugins = new a.PluginWrapper(ts);

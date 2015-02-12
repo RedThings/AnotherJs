@@ -27,32 +27,23 @@
     a.Plugins = {};
 
     // Initialize presenter
-    a.InitializePresenter = function (name, container, mdl, preCallback, callback) {
+    a.InitializePresenter = function (name, container, preCallback, callback) {
         
-        if (typeof mdl === "function") {
-            if (preCallback === undefined) {
-                callback = mdl;
-                preCallback = undefined;
-            } else {
-                callback = preCallback;
-                preCallback = mdl;
-            }
-            mdl = undefined;
-
+        // sort out params
+        if (callback === undefined && typeof preCallback === "function") {
+            callback = preCallback;
+            preCallback = function() {};
         }
-
         if (preCallback === undefined) preCallback = function (prs) { };
         if (callback === undefined) callback = function(prs) {};
 
-
+        // sort out container
         if (typeof container === "string") {
             container = a.DomHelper(container);
         }
-
         if (a.IsUndefinedOrNull(container) || container.length < 1)
             container = a.DomHelper("<div />");
-
-
+        
         // 
         a.RaiseEvent("OnBeginPresenterInitializing", name);
 
@@ -61,7 +52,6 @@
         if (typeof name === "string") {
             presenterObj = a.Presenters[name];
         }
-        
 
         // check
         if (a.IsUndefinedOrNull(presenterObj))
@@ -69,24 +59,33 @@
 
         a.RaiseEvent("OnPresenterInitializing", presenterObj);
 
-        // found so initialize
-        var model = mdl || {
-            Ui: {},
-            Form: {},
-            Data: {}
-        };
-
         // create presenter
-        var presenter = new a.AnotherPresenter(name, model, container);
+        var presenter = new a.AnotherPresenter(name, container);
 
-        // pre
-        preCallback(presenter);
+        // create model
+        var model = {};
+        
+        // add aliases
+        presenter.AddAlias("Model", "Model");
+        presenter.AddAlias("Ui", "Model.Ui");
+        presenter.AddAlias("Data", "Model.Data");
+        presenter.AddAlias("Form", "Model.Form");
 
-        // observe
+        // observe and add and observe etc etc
+        presenter.Model = model;
         presenter.Observe("{Model}");
+        presenter.Model.Form = {};
+        presenter.Model.Ui = {};
+        presenter.Model.Data = {};
+        
+        // pre
+        if (a.IsFunc(preCallback)) {
+// ReSharper disable once InvokedExpressionMaybeNonFunction
+            preCallback(presenter);
+        };
         
         // user init
-        presenterObj(presenter, model, model.Form, model.Ui, model.Data);
+        presenterObj(presenter, presenter.Model, presenter.Model.Form, presenter.Model.Ui, presenter.Model.Data);
         
         // intialize dom
         presenter.InitializeDom(presenter.Container);
