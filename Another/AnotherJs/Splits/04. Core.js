@@ -25,6 +25,53 @@
 
     // plugins
     a.Plugins = {};
+    a.GetPluginsAsArray = function () {
+        if (_pluginsAsArray === undefined) {
+            _pluginsAsArray = [];
+            a.DomHelper.each(a.Plugins, function (nm, plg) {
+                _pluginsAsArray.push(plg);
+            });
+        }
+        return _pluginsAsArray;
+    };
+    a.GetPluginsAsArrayOrdered = function () {
+        var plugins = a.GetPluginsAsArray();
+        return plugins.sort(a.OrderSort);
+    }
+    a.OrderSort = function (valA, valB) {
+        if (valA.order < valB.order)
+            return -1;
+        if (valA.order > valB.order)
+            return 1;
+        return 0;
+    }
+    var _pluginsAsArray;
+
+    // exclusions
+    a.PluginTraversalExclusions = [];
+    a.GetPluginTraversalExclusionsStr=function() {
+        if (a.PluginTraversalExclusions.length > 0) {
+            var strnged = a.PluginTraversalExclusions.map(function(ex) {
+                return "[" + ex + "]";
+            });
+            var output = strnged.join(",");
+            return output;
+        };
+        
+
+        return "___THIS___WONT___EXIST";
+    }
+    a.IsExcludedFromDomTraversal=function(pluginName) {
+        return a.PluginTraversalExclusions.indexOf(pluginName) > -1;
+    }
+    a.HasExcludedFromDomTraveralAttribute = function (nativeEl) {
+        var ok = false;
+        a.DomHelper.each(nativeEl.attributes, function(nm,vl) {
+            if (a.IsExcludedFromDomTraversal(vl.name)) ok = true;
+        });
+        return ok;
+    }
+    
 
     // Initialize presenter
     a.InitializePresenter = function (name, container, preCallback, callback) {
@@ -89,6 +136,9 @@
         
         // intialize dom
         presenter.InitializeDom(presenter.Container);
+
+        // force
+        presenter.ForceObserve();
         
         // finally raise and callback
         a.RaiseEvent("OnPresenterInitialized", presenter);

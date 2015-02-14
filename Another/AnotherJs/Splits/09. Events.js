@@ -18,12 +18,17 @@
 
     // raise event
     a.RaiseEvent = function (name, obj) {
-
+        
         // find
         var foundEv = a.CreateEvent(name);
+        
+        // check
+        if (typeof obj !== "object") {
+            obj = { value: obj };
+        }
 
         // create obj
-        obj.Event = { Timestamp: new Date(), Name: name }
+        obj.event = { timestamp: new Date(), name: name }
 
         // loop subscibers
         foundEv.Subscribers.forEach(function (s) {

@@ -5,30 +5,14 @@
     a.PluginsApp = a.CreateApplication("Another.PluginsApp");
     (function (ap) {
 
-        // Presenter.Plugins.Model
-        ap.AddPlugin("AnModel", function (theEl, opts, presenter) {
-            
-            // get value
-            var theVal = presenter.Eval(opts.main);
-
-            // change
-            presenter.ObserveChange(opts.main, function (newVal) {
-                
-                // set
-                if (theEl.data("change_from_element") !== true) {
-                    theEl.html(newVal);
-                    theEl.val(newVal);
-
-                } else {
-
-                    theEl.data("change_from_element", false);
-                }
-
-            });
+        // Model
+        ap.AddPlugin("AnModel", -9000, function (theEl, opts, presenter) {
 
             // evName
-            var evName = undefined;
+            var evName = "change";
             var tagName = theEl[0].tagName;
+            var doHtml = true;
+            var doVal = true;
             switch (tagName) {
                 case "TEXTAREA":
                     {
@@ -38,14 +22,18 @@
                 case "INPUT":
                     {
                         if (theEl.attr("type") !== "submit") evName = "keyup";
+                        doHtml = false;
+                        break;
+                    }
+                case "SELECT":
+                    {
+                        doHtml = false;
                         break;
                     }
                 default:
-                    evName = "change";
                     break;
 
             }
-
 
             // bind
             theEl.bind(evName, function (e) {
@@ -54,14 +42,35 @@
                 presenter.EvalSet(opts.main, nuVal);
             });
 
+            // change
+            presenter.ObserveChange(-9000, opts.main, function (newVal) {
+
+                // set
+                if (theEl.data("change_from_element") !== true) {
+                    if (doHtml) theEl.html(newVal);
+                    if (doVal); theEl.val(newVal);
+
+                } else {
+
+                    theEl.data("change_from_element", false);
+                }
+
+                if (!a.StringIsNullOrEmpty(opts.change)) {
+                    presenter.Eval(opts.change, { "{newVal}": newVal });
+                }
+
+            });
+
+
+
         });
 
-        // Presenter.Plugins.Click
-        ap.AddPlugin("AnClick", function (theEl, opts, presenter) {
+        // Click
+        ap.AddPlugin("AnClick", 0, function (theEl, opts, presenter) {
 
             // on click
             theEl.on("click", presenter.Container, function (e) {
-                
+
                 e.preventDefault();
                 presenter.Eval(opts.main, { "{e}": e, "{el}": theEl });
 
@@ -69,8 +78,8 @@
 
         });
 
-        // Presenter.Plugins.Submit
-        ap.AddPlugin("AnSubmit", function (theForm, opts, presenter) {
+        // Submit
+        ap.AddPlugin("AnSubmit", 0, function (theForm, opts, presenter) {
 
             theForm.each(function (i, chld) {
                 var child = presenter.DomHelper(chld);
@@ -90,7 +99,7 @@
         });
 
         // IfText
-        ap.AddPlugin("AnIf", function (element, opts, presenter) {
+        ap.AddPlugin("AnIf", 0, function (element, opts, presenter) {
 
             // from html
             var spltLeft = opts.main.split("?");
@@ -98,24 +107,24 @@
             var spltRight = spltLeft[1].split(':');
             opts.trueState = presenter.Eval(a.Trim(spltRight[0]));
             opts.falseState = presenter.Eval(a.Trim(spltRight[1]));
-            
+
             // now add observe
-            presenter.ObserveChange(opts.propName, function (newVal) {
-                
+            presenter.ObserveChange(0, opts.propName, function (newVal) {
+
                 var txt = newVal === true ? opts.trueState : opts.falseState;
                 element.html(txt);
                 element.val(txt);
             });
 
-            
+
         });
 
         // show
-        ap.AddPlugin("AnShow", function (element, opts, presenter) {
+        ap.AddPlugin("AnShow", 0, function (element, opts, presenter) {
 
             var name = opts.main;
-            presenter.ObserveChange(name, function () {
-                
+            presenter.ObserveChange(0, name, function () {
+
                 var newVal = presenter.Eval(opts.main);
                 if (newVal === true) {
                     element.show();
@@ -124,15 +133,15 @@
                 }
 
             });
-           
+
         });
 
         // enable
         ap.AddPlugin("AnEnable", function (element, opts, presenter) {
 
             var name = opts.main;
-            
-            presenter.ObserveChange(name, function () {
+
+            presenter.ObserveChange(0, name, function () {
                 var newVal = presenter.Eval(opts.main);
                 if (newVal === true) {
                     element.removeAttr("disabled");
@@ -141,14 +150,40 @@
                 }
             });
 
-            
+
 
         });
 
+        // text
+        ap.AddPlugin("AnText", -5000, function (element, opts, presenter) {
+            presenter.ObserveChange(-5000, opts.main, function (newVal) {
+                element.text(newVal);
+            });
+        });
+
+        // value
+        ap.AddPlugin("AnValue", -6000, function (element, opts, presenter) {
+            presenter.ObserveChange(-6000, opts.main, function (newVal) {
+                element.val(newVal);
+            });
+        });
+
+        // value
+        ap.AddPlugin("AnChange", 0, function (element, opts, presenter) {
+
+            element.change(function (e) {
+                console.log(opts.main, element.val());
+                presenter.Eval(opts.main, { "{e}": e, "{el}": element });
+
+            });
+
+            presenter.Eval(opts.main, { "{e}": undefined, "{el}": element });
+        });
+
         // attrs
-        ["Href", "Title","Target"]
+        ["Href", "Title", "Target"]
             .forEach(function (attr) {
-                ap.AddPlugin("AnAttr" + attr, function (element, opts, presenter) {
+                ap.AddPlugin("AnAttr" + attr, 0, function (element, opts, presenter) {
                     bindAttrPlugin(attr.toLowerCase(), element, opts, presenter);
                 });
             });
@@ -164,7 +199,7 @@
             // loop
             matches.forEach(function (m) {
 
-                presenter.ObserveChange(m[1], function () {
+                presenter.ObserveChange(0, m[1], function () {
 
                     replaceAttr(attr, element, matches, opts.main, presenter);
 
@@ -186,7 +221,7 @@
         }
 
         // Presenter.Plugins.Repeater
-        ap.AddPlugin("AnRepeater", function (element, opts, presenter) {
+        ap.AddPlugin("AnRepeater", -100000, true, function (element, opts, presenter) {
 
             // create repeater
             var rpt = new ap.Repeater(element, opts, presenter);
@@ -210,7 +245,6 @@
                 ts.ParentElement = element.parent();
                 ts.ClonedHtml = element[0].outerHTML;
                 element.remove();
-                ts.Presenter = presenter;
                 ts.OnRowBinding = opts.onRowBinding;
 
                 // set data
@@ -221,7 +255,7 @@
                 ts.RowAlias = splt[0];
                 ts.FullName = splt[2];
                 ts.Data = presenter.Eval(ts.FullName);
-                
+
                 // do checks
                 if (a.IsUndefinedOrNull(ts.Data)) {
                     throw new Error(ts.FullName + " does not exist");
@@ -314,31 +348,30 @@
             // create
             this.CreateElement = function (rowVal, callback) {
 
-                // get id
-                var id = a.GetRandom(true);
-
                 // create new
                 var newEl = ts.Presenter.DomHelper(ts.ClonedHtml);
                 newEl.hide();
 
-                // add id
-                newEl.attr("id", id);
-
                 // create presenter
                 var pName = ts.CreatePresenter();
 
+                // add id
+                newEl.attr("id", pName);
+
                 // indx
                 ap.InitializePresenter(pName, newEl, function (p) {
-                    
+
+                    p.ParentPresenter = ts.Presenter;
+                    ts.Presenter.ChildPresenters.push(p);
                     p.Aliases = a.Clone(ts.Presenter.Aliases);
-                    p.Aliases.forEach(function(alias) {
+                    p.Aliases.forEach(function (alias) {
                         eval("p." + alias.str + " = ts.Presenter." + alias.str);
                     });
                     p[ts.RowAlias] = rowVal;
                     p.AddAlias(ts.RowAlias, ts.RowAlias);
-                    p.Observe(ts.RowAlias);
+                    p.Observe("{" + ts.RowAlias + "}");
                     p[ts.RowAlias].ReApply = function (newObj, func) {
-                        
+
                         // Do something here
                         ts.Presenter.DomHelper.each(newObj, function (key, val) {
                             p[ts.RowAlias][key] = val;
@@ -355,7 +388,7 @@
 
                     // fire binding
                     ts.OnRowBinding(newEl, rowVal, p);
-                    
+
                     // show
                     newEl.show();
 

@@ -36,7 +36,7 @@
         }
         this.Aliases = [];
         this.AddAlias = function (alias, realValStr) {
-            
+
             // add
             alias = "{" + alias + "}";
 
@@ -45,7 +45,9 @@
 
         }
         this.Eval = function (str, obj, spltStringArr) {
-            
+
+            //if (str.indexOf("{row})") > -1) debugger;
+
             // set str
             str = ts.GetUnaliasedString(str, obj, spltStringArr);
 
@@ -56,26 +58,26 @@
             try {
                 eval("output = " + str);
             } catch (err) {
-                if (window.location.toString().indexOf("localhost") > -1)
-                    console.log("Error evaluating " + str + ": ",err);
+                //if (window.location.toString().indexOf("localhost") > -1)
+                // console.log("Error evaluating " + str + ": ",err);
             }
 
             // 
             return output;
 
         }
-        this.EvalSet=function(str, val) {
-            
+        this.EvalSet = function (str, val) {
+
             str = ts.GetUnaliasedString(str);
             try {
                 eval(str + " = val;");
             } catch (err) {
-                if (window.location.toString().indexOf("localhost") > -1)
-                    console.log("Error evaluating " + str);// + ": ",err);
+                //if (window.location.toString().indexOf("localhost") > -1)
+                //console.log("Error evaluating " + str);// + ": ",err);
             }
         }
         this.GetUnaliasedString = function (str, obj, spltStringArr) {
-            
+
             // check
             var includeMethods = false;
             if (str.indexOf("(") > -1 && str.indexOf(")") > -1) {
@@ -108,7 +110,7 @@
             // now loop obj
             if (!a.IsUndefinedOrNull(obj) && typeof obj === "object") {
                 ts.DomHelper.each(obj, function (key) {
-                    str = a.ReplaceAll(str, key, "obj[" + key + "]");
+                    str = a.ReplaceAll(str, key, "obj['" + key + "']");
                 });
             }
 
@@ -117,32 +119,46 @@
         };
         this.SplitAliasedString = function (str, includeMethods) {
 
-            // example '{Model}.ShowSomething != {Data}.FuckOff || false'
-            // should return ["{Model}.ShowSomething","{Data}.FuckOff"]
-            // str = '{Model}.ShowSomething != {Data}.FuckOff || false';
+            // get from cache
+            var output = _splits[str];
 
+            // check
+            if (output === undefined) {
 
-            // loop aliases
-            var match;
-            var matcher;
-            var matches = [];
-            ts.Aliases.forEach(function (aliasObj) {
+                // example '{Model}.ShowSomething != {Data}.FuckOff || false'
+                // should return ["{Model}.ShowSomething","{Data}.FuckOff"]
+                //str = '{Model}.ShowSomething.Cock({e},{el}) != {Data}.FuckOff || false';
+                //includeMethods = true;
+                //if (ts.Aliases.filter(function(x) { return x.alias === "{row}"; }).length > 0) debugger;
 
-                matcher = new RegExp(aliasObj.alias + (includeMethods ? "[^\s\*\/%!=|+-]*" : "[^(\s\*\/%!=|+-]*"));
-                match = matcher.exec(str);
-                if (!a.IsUndefinedOrNull(match)) {
-                    matches.push(match);
-                }
+                // loop aliases
+                var match;
+                var matcher;
+                var matchStr;
+                var matches = [];
+                ts.Aliases.forEach(function (aliasObj) {
+                    //if (/*str.indexOf("{row}.ReadOnly") > -1 &&*/ aliasObj.alias === "{row}") console.log(str);
+                    matchStr = aliasObj.alias + (includeMethods ? "[^\\s\\*\\/\\%\\!\\=\\|\\+\\-]*" : "[^\\s\\*\\/\\%\!\\=\\|\\+\\-\\(]*");
+                    //matchStr = "{row}[^ \*\/%!=|+-\(]*";
+                    matcher = new RegExp(matchStr);
+                    match = matcher.exec(str);
+                    if (!a.IsUndefinedOrNull(match)) {
+                        matches.push(match);
+                    }
+                });
+                output = matches.map(function (m) {
+                    return a.StripWhitespace(m[0]);
+                });
+                _splits[str] = output;
+            }
 
-
-            });
-            return matches.map(function (m) {
-                return m[0];
-            });
+            return output;
         }
+        var _splits = {};
 
         // observe and object
         this.Observe = function (aliasedName) {
+
             if (aliasedName.indexOf("{") < 0 || aliasedName.indexOf("}") < 0) {
                 aliasedName = a.ReplaceAll(aliasedName, "{", "");
                 aliasedName = a.ReplaceAll(aliasedName, "}", "");
@@ -153,7 +169,7 @@
 
             // loop
             objStrings.forEach(function (str) {
-                
+
                 // get obj
                 var obj = ts.Eval(str, objStrings);
 
@@ -167,7 +183,6 @@
                         // observe
                         Object.observe(obj, function (vals) {
                             onObjectChanged(str, vals);
-
                         });
 
                         // add to observing list
@@ -190,7 +205,7 @@
 
         }
         var _alreadyObserving = {};
-        var checkForArraysAndOrObjectsToBind = function (fullName, propName, obj) {
+        var checkForArraysAndOrObjectsToBind = function (aliasedName, propName, obj) {
 
             // start
             var childPropName = propName;
@@ -202,29 +217,33 @@
                 childPropName = "." + childPropName;
             }
 
-            // childname
-            var childName = fullName + childPropName;
+            // GETTING RID OF THIS - LEGACY - [] - go away
+            if (childPropName.indexOf("[") < 0) {
+                
+                // childname
+                var childName = aliasedName + childPropName;
 
-            // array?
-            if (ts.ShouldBeObservableArray(obj)) {
+                // array?
+                if (ts.ShouldBeObservableArray(obj)) {
+                    var theArray = ts.Eval(childName);
+                    ts.ConvertToObservableArray(childName, theArray);
+                }
 
-                var childObj = undefined;
-                ts.ConvertToObservableArray(childName, childObj);
-            }
+                // object
+                if (typeof obj === "object") {
 
-            // object
-            if (typeof obj === "object") {
+                    ts.Observe(childName);
 
-                ts.Observe(childName);
+                }
 
             }
 
         }
-        var onObjectChanged = function (fullName, changedValues) {
-            
+        var onObjectChanged = function (aliasedName, changedValues) {
+            console.log(aliasedName + " changed. ", changedValues);
             // add
             changedValues.forEach(function (vl) {
-                
+
                 // new val
                 var newVal = vl.object[vl.name];
 
@@ -232,100 +251,173 @@
                 if (vl.type === "add") {
 
                     // check
-                    checkForArraysAndOrObjectsToBind(fullName, vl.name, newVal);
+                    checkForArraysAndOrObjectsToBind(aliasedName, vl.name, newVal);
                 }
 
-                // get name that would be in _changeObservers;
-                var changeObserversKey = fullName + "." + vl.name;
+                // get name that would be in ts.ChangeObservers;
+                var changeObserversKey = aliasedName + "." + vl.name;
 
                 // find in observers
-                var found = _changeObservers.filter(function (co) {
-                    return co.fullName == changeObserversKey;
-                });
+                var found = ts.ChangeObservers.filter(function (co) {
+                    return co.aliasedName == changeObserversKey;
+                }).sort(a.OrderSort);
                 found.forEach(function (f) {
 
                     f.changeFunc(newVal);
 
                 });
 
-                // find by parent
-                var parentObj = ts.Eval(fullName);
-                var found2 = _changeObservers.filter(function (co) {
-                    return co.fullName == fullName;
-                });
-                found2.forEach(function (f) {
+                //// find by parent
+                //var parentObj = ts.Eval(aliasedName);
+                //var found2 = ts.ChangeObservers.filter(function (co) {
+                //    return co.aliasedName == aliasedName;
+                //}).sort(a.OrderSort);
+                //found2.forEach(function (f) {
 
-                    f.changeFunc(parentObj, vl.name, newVal);
+                //    f.changeFunc(parentObj, vl.name, newVal);
 
-                });
+                //});
 
 
 
             });
 
         }
-        this.ConvertToObservableArray = function (fullname, arr) {
+        this.ConvertToObservableArray = function (aliasedName, arr) {
 
             var newArr = new a.ObservableArray();
-            newArr.initialize(fullname, arr);
-            ts.EvalSet(fullname,newArr);
-            //eval(ts.GetPresenterBasedEvalString("ts", fullname) + " = newArr;");
+            newArr.initialize(aliasedName, arr);
+            ts.EvalSet(aliasedName, newArr);
             return newArr;
 
         }
-        this.ObserveChange = function (fullname, changeFunc) {
+        this.ObserveChange = function (executionOrder, aliasedName, changeFunc) {
 
-            if (a.StringIsNullOrEmpty(fullname) || !a.IsFunc(changeFunc)) return;
+            if (a.StringIsNullOrEmpty(aliasedName) || !a.IsFunc(changeFunc)) return;
 
             // get chunks
-            var chunks = ts.SplitAliasedString(fullname, false);
+            var chunks = ts.SplitAliasedString(aliasedName, false);
+
+            // check children
+            //ts.ChildPresenters.forEach(function (ch) {
+            //    var chChunks = ch.SplitAliasedString(aliasedName, false);
+            //    if (chChunks.length > 0) {
+            //        chunks.concat(chChunks);
+            //    }
+            //});
+
             //loop
-            chunks.forEach(function(ch) {
-                _changeObservers.push({ fullName: ch, changeFunc: changeFunc });
+            chunks.forEach(function (ch) {
+                ts.ChangeObservers.push({ aliasedName: ch, changeFunc: changeFunc, order: executionOrder });
+                ts.ChildPresenters.forEach(function (ch2) {
+                    ch2.ChangeObservers.push({ aliasedName: ch, changeFunc: changeFunc, order: executionOrder });
+                });
             });
 
-            // go once!
-            var initVal = ts.Eval(fullname);
-            changeFunc(initVal);
-        }
-        var _changeObservers = [];
+            //var initVal = ts.Eval(aliasedName);
+            //changeFunc(initVal);
 
+        }
+        this.ChangeObservers = [];
+        this.ChildPresenters = [];
+        this.ParentPresenter = undefined;
+        this.ForceObserve = function () {
+
+            // find in observers
+            var found = ts.ChangeObservers;
+            //var foundParents = ts.ParentPresenter === undefined ? []: ts.ParentPresenter.ChangeObservers;
+            //var foundChildren = [];
+            //ts.ChildPresenters.forEach(function (ch) {
+            //    var foundChildrenInner = ch.ChangeObservers;
+            //    foundChildrenInner.forEach(function (inn) {
+            //        foundChildren.push(inn);
+            //    });
+            //});
+
+            // final
+            var finalArr =
+                found;
+            //.concat(foundParents)
+            //.concat(foundChildren)
+            //.sort(a.OrderSort);
+
+            // loop
+            finalArr.forEach(function (obsObj) {
+                var theVal = ts.Eval(obsObj.aliasedName);
+                obsObj.changeFunc(theVal);
+            });
+        }
 
         // initialize dom
         this.InitializeDom = function (domContext) {
 
+            inspectElement(domContext[0]);
+
+        }
+        var inspectElement = function (el) {
+
+            // jQuery el
+            var jEl = ts.DomHelper(el);
+
+            // recurse?
+            var shouldRecurse = true;
+
+            // ordered plugins
+            var orderedPlugins = a.GetPluginsAsArrayOrdered();
+
             // look at presenters
-            ts.DomHelper.each(a.Plugins, function (pluginName, plugin) {
+            orderedPlugins.forEach(function (plugin) {
+                //ts.DomHelper.each(a.Plugins, function (pluginName, plugin) {
 
                 // vars
                 var attrName = plugin.attrName;
-                var selector = "[" + attrName + "]";
 
-                // inspect dom
-                domContext.find(selector).each(function (i, el) {
+                // get attr
+                var attr = el.attributes[attrName];
 
-                    // jQuery el
-                    var jEl = ts.DomHelper(el);
+                // check
+                if (attr !== undefined) {
 
-                    // attrs
-                    var opts = {};
-                    ts.DomHelper.each(el.attributes, function (ai, attr) {
-                        if (a.StartsWith(attr.name, attrName) && attr.name !== attrName) {
-                            opts[attr.name.replace(attrName, "")] = attr.value;
-                        }
-                    });
+                    // init
+                    initializeElement(jEl, el, plugin.name, attrName);
 
-                    // set wrapperPropName in opts
-                    var finalVal = jEl.attr(attrName);
-                    opts.main = finalVal;
-
-                    // call presenter.plugins[pluginName](el, opts)
-                    ts.Plugins[pluginName](jEl, opts);
-
-                });
-
+                    // set recurse
+                    if (a.IsExcludedFromDomTraversal(attrName)) {
+                        shouldRecurse = false;
+                    }
+                }
             });
 
+            // check
+            if (shouldRecurse === true) {
+                jEl.children().each(function (iii, elelel) {
+                    inspectElement(elelel);
+                });
+            }
+
+        }
+        var initializeElement = function (jEl, el, pluginName, attrName) {
+
+            // attrs
+            var opts = {};
+
+            // set wrapperPropName in opts
+            var finalVal = jEl.attr(attrName);
+            opts.main = finalVal;
+
+            // remove attr
+            jEl.removeAttr(attrName);
+
+            // set other attributes
+            ts.DomHelper.each(el.attributes, function (ai, attr) {
+
+                if (a.StartsWith(attr.name, attrName)) {
+                    opts[attr.name.replace(attrName + "-", "")] = attr.value;
+                }
+            });
+
+            // call presenter.plugins[pluginName](el, opts)
+            ts.Plugins[pluginName](jEl, opts);
         }
 
 

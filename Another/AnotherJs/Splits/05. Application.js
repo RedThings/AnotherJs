@@ -1,7 +1,7 @@
 ﻿'use strict';
 
-(function(a) {
-    
+(function (a) {
+
     // application class
     a.AnotherApplication = function (appName) {
 
@@ -114,7 +114,13 @@
         }
 
         // plugins
-        this.AddPlugin = function (name, callback) {
+        this.AddPlugin = function (name, traversalOrder, excludeFromDomTraversal, callback) {
+
+            // sort params
+            if (a.IsFunc(excludeFromDomTraversal)) {
+                callback = excludeFromDomTraversal;
+            }
+            if (excludeFromDomTraversal !== true) excludeFromDomTraversal = false;
 
             // check
             if (a.Plugins[name] !== undefined) {
@@ -123,8 +129,13 @@
 
             // callback
             a.Plugins[name] = {
-                callback: callback, attrName: a.GetAttributeName(name)
+               name:name, callback: callback, attrName: a.GetAttributeName(name),order:traversalOrder
             };
+
+            // if exclude
+            if (excludeFromDomTraversal === true) {
+                a.PluginTraversalExclusions.push(a.Plugins[name].attrName);
+            }
 
             //
             return ts;

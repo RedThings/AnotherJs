@@ -246,7 +246,7 @@
             },
 
             initialize:function(fullName, origArr) {
-
+                
                 // self
                 var ts = this;
 
